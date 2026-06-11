@@ -1,9 +1,9 @@
-import Loginform from "../components/login/LoginForm";
+import LoginForm from "../components/login/LoginForm";
 
 const Login = () => {
   return (
     <div className="w-screen flex justify-center items-center h-screen">
-      <Loginform />
+      <LoginForm />
     </div>
   );
 };

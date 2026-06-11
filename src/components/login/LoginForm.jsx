@@ -71,7 +71,7 @@ const StyledLink = styled(NavLink)`
   }
 `;
 
-const Loginform = () => {
+const LoginForm = () => {
   const emailRef = useRef(null);
   const passRef = useRef(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -139,7 +139,7 @@ const Loginform = () => {
             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
           </button>
         </div>
-        <Button text="Login" bg="Green" />
+        <Button text="Login"  />
         <StyledLink to="/support">
           Can't Login? <span>Contact Support</span>
         </StyledLink>
@@ -148,4 +148,4 @@ const Loginform = () => {
   );
 };
 
-export default Loginform;
+export default LoginForm;
