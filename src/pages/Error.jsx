@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import styled from "styled-components";
+import logo from "../assets/logo.png";
 
 const StyledLink = styled(NavLink)`
   background: var(--university-blue-dark);
@@ -15,10 +16,20 @@ const StyledLink = styled(NavLink)`
 const Error = () => {
   return (
     <>
-      <div className="flex flex-col justify-center items-center w-screen h-screen relative">
+      <div
+        className="relative flex h-screen w-screen flex-col items-center justify-center overflow-hidden"
+      >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-center bg-no-repeat opacity-10"
+          style={{
+            backgroundImage: `url(${logo})`,
+            backgroundSize: "min(42vw, 420px)",
+          }}
+        />
         <span className="w-full fixed top-0">
-          <div class="h-2 bg-[var(--university-red)] w-full"></div>
-          <div class="h-1 bg-[var(--university-gold)]  w-full"></div>
+          <div className="h-2 w-full bg-[var(--university-red)]"></div>
+          <div className="h-1 w-full bg-[var(--university-gold)]"></div>
         </span>
         <span className="text-[20vw] font-extrabold text-[#d3d9e2d4] fixed z-0">
           <h3>404</h3>
