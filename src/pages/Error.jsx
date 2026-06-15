@@ -21,10 +21,11 @@ const Error = () => {
       >
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-center bg-no-repeat opacity-10"
+          className="pointer-events-none fixed inset-0 bg-center bg-no-repeat opacity-10"
           style={{
             backgroundImage: `url(${logo})`,
             backgroundSize: "min(42vw, 420px)",
+            
           }}
         />
         <span className="w-full fixed top-0">

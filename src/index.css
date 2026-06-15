@@ -28,3 +28,8 @@ body {
   min-height: 100vh;
   background: var(--university-surface-soft);
 }
+
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
