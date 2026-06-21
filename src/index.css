@@ -33,3 +33,19 @@ input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
   display: none;
 }
+
+.login-carousel,
+.login-carousel .ant-carousel,
+.login-carousel .slick-slider,
+.login-carousel .slick-list,
+.login-carousel .slick-track,
+.login-carousel .slick-slide,
+.login-carousel .slick-slide > div {
+  height: 100% !important;
+}
+
+.login-carousel .slick-slide img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}

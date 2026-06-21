@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { NavLink } from "react-router-dom";
 import Button from "../common/Button";
 import logo from "../../assets/loginLogo.png";
-
+import axios from "axios";
 const AtIcon = () => (
   <svg
     aria-hidden="true"
@@ -89,15 +89,42 @@ const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState(roles[0]);
 
-  const handlesubmit = (e) => {
+  const handlesubmit = async (e) => {
     e.preventDefault();
     const email = emailRef.current.value;
     const password = passRef.current.value;
-    console.log("Login submitted", {
-      role: selectedRole.id,
-      email,
-      hasPassword: Boolean(password),
-    });
+
+    try {
+      const { data } = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        {
+          email,
+          password,
+        },
+        {
+          withCredentials: true,
+        },
+      );
+
+      const roles = data.user.roles;
+
+      if (!roles.includes(selectedRole.id)) {
+        alert("Selected role does not match your account");
+        return;
+      }
+      console.log(data);
+    } catch (err) {
+      alert(err.response?.data?.message || "Login Failed");
+    } finally {
+      emailRef.current.value = "";
+      passRef.current.value = "";
+    }
+
+    // console.log("Login submitted", {
+    //   role: selectedRole.id,
+    //   email,
+    //   hasPassword: Boolean(password),
+    // });
   };
 
   return (
@@ -110,7 +137,7 @@ const LoginForm = () => {
             alt="K.R. Mangalam University"
             className="mx-auto mb-5 h-auto w-full max-w-[320px] object-contain"
           />
-          
+
           <h1 className="pb-2 text-center text-2xl font-semibold text-[var(--university-ink)]">
             {selectedRole.label} Login
           </h1>
