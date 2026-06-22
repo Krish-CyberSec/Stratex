@@ -1,9 +1,8 @@
-import Navbar from "../components/dashboard/Navbar";
-
+import DashboardLayout from "../layout/DashboardLayout";
 const Home = () => {
   return (
     <>
-      <Navbar />
+     <DashboardLayout/>
     </>
   );
 };

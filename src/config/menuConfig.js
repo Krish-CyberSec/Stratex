@@ -1,54 +1,167 @@
-export const menuConfig = {
-  student: [
-    {
-      label: "Dashboard",
-      path: "/dashboard"
-    },
-    {
-      label: "Notices",
-      path: "/dashboard/notices"
-    },
-    {
-      label: "Events",
-      path: "/dashboard/events"
-    },
-    {
-      label: "Profile",
-      path: "/dashboard/profile"
-    }
-  ],
+import {
+  PersonFillIcon,
+  InboxFillIcon,
+  BookmarkFillIcon,
+  NoteIcon,
+  FileDirectoryOpenFillIcon,
+  MegaphoneIcon,
+  PeopleIcon,
+  OrganizationIcon,
+} from "@primer/octicons-react";
 
-  faculty: [
+export const menuConfig = {
+  superAdmin: [
     {
-      label: "Dashboard",
-      path: "/dashboard"
+      name: "Profile",
+      icon: PersonFillIcon,
+      path: "/dashboard/profile",
     },
     {
-      label: "My Subjects",
-      path: "/dashboard/my-subjects"
+      name: "Notifications",
+      icon: InboxFillIcon,
+      path: "/dashboard/notifications",
     },
     {
-      label: "Timetable",
-      path: "/dashboard/timetable"
-    }
+      name: "Users",
+      icon: PeopleIcon,
+      path: "/dashboard/users",
+    },
+    {
+      name: "Schools",
+      icon: OrganizationIcon,
+      path: "/dashboard/schools",
+    },
+    {
+      name: "Programs",
+      icon: FileDirectoryOpenFillIcon,
+      path: "/dashboard/programs",
+    },
+    {
+      name: "Subjects",
+      icon: BookmarkFillIcon,
+      path: "/dashboard/subjects",
+    },
+    {
+      name: "Notices",
+      icon: NoteIcon,
+      path: "/dashboard/notices",
+    },
+    {
+      name: "Events",
+      icon: MegaphoneIcon,
+      path: "/dashboard/events",
+    },
   ],
 
   schoolAdmin: [
     {
-      label: "Dashboard",
-      path: "/dashboard"
+      name: "Profile",
+      icon: PersonFillIcon,
+      path: "/dashboard/profile",
     },
     {
-      label: "Users",
-      path: "/dashboard/users"
+      name: "Notifications",
+      icon: InboxFillIcon,
+      path: "/dashboard/notifications",
     },
     {
-      label: "Programs",
-      path: "/dashboard/programs"
+      name: "Users",
+      icon: PeopleIcon,
+      path: "/dashboard/users",
     },
     {
-      label: "Subjects",
-      path: "/dashboard/subjects"
-    }
-  ]
+      name: "Programs",
+      icon: FileDirectoryOpenFillIcon,
+      path: "/dashboard/programs",
+    },
+    {
+      name: "Subjects",
+      icon: BookmarkFillIcon,
+      path: "/dashboard/subjects",
+    },
+    {
+      name: "Notices",
+      icon: NoteIcon,
+      path: "/dashboard/notices",
+    },
+    {
+      name: "Events",
+      icon: MegaphoneIcon,
+      path: "/dashboard/events",
+    },
+  ],
+
+  faculty: [
+    {
+      name: "Profile",
+      icon: PersonFillIcon,
+      path: "/dashboard/profile",
+    },
+    {
+      name: "Notifications",
+      icon: InboxFillIcon,
+      path: "/dashboard/notifications",
+    },
+    {
+      name: "Subjects",
+      icon: BookmarkFillIcon,
+      path: "/dashboard/subjects",
+    },
+    {
+      name: "Notices",
+      icon: NoteIcon,
+      path: "/dashboard/notices",
+    },
+    {
+      name: "Events",
+      icon: MegaphoneIcon,
+      path: "/dashboard/events",
+    },
+  ],
+
+  student: [
+    {
+      name: "Profile",
+      icon: PersonFillIcon,
+      path: "/dashboard/profile",
+    },
+    {
+      name: "Notifications",
+      icon: InboxFillIcon,
+      path: "/dashboard/notifications",
+    },
+    {
+      name: "Notices",
+      icon: NoteIcon,
+      path: "/dashboard/notices",
+    },
+    {
+      name: "Events",
+      icon: MegaphoneIcon,
+      path: "/dashboard/events",
+    },
+  ],
+
+  examCell: [
+    {
+      name: "Profile",
+      icon: PersonFillIcon,
+      path: "/dashboard/profile",
+    },
+    {
+      name: "Notifications",
+      icon: InboxFillIcon,
+      path: "/dashboard/notifications",
+    },
+    {
+      name: "Notices",
+      icon: NoteIcon,
+      path: "/dashboard/notices",
+    },
+    {
+      name: "Events",
+      icon: MegaphoneIcon,
+      path: "/dashboard/events",
+    },
+  ],
 };
