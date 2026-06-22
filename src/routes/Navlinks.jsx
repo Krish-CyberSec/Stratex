@@ -1,6 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import Home from "../pages/Home";
-import Login from "../pages/Login";
+import Login from "../pages/auth/Login";
 import Support from "../pages/Support";
 import Error from "../pages/Error";
 const Navlinks = () => {
