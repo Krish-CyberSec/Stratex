@@ -77,7 +77,7 @@ const ProfileDropdown = ({ onClose }) => {
       </div>
 
       {/* Navigation */}
-      <nav className="p-2">
+      <nav className="flex flex-col gap-2 p-2">
         {/* Home */}
         <NavLink
           to="/dashboard"
