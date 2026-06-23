@@ -1,9 +1,15 @@
-import React from 'react'
+import React from "react";
+import SuperAdminDashboard from "./superAdmin/SuperAdminDashboard";
 
 const DashboardHome = () => {
   return (
-    <div>DashboardHome</div>
-  )
-}
+    <>
+      
+    <SuperAdminDashboard/>
 
-export default DashboardHome
+
+    </>
+  );
+};
+
+export default DashboardHome;
