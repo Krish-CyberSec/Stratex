@@ -6,30 +6,12 @@ import ProfileDropdown from "./ProfileDropdown";
 // import {} from 'lucide-react'
 const Navbar = () => {
   const [profileClicked, setProfileClicked] = useState(false);
-//   useEffect(() => {
-//   const handleClick = (e) => {
-//     if (
-//       dropdownRef.current &&
-//       !dropdownRef.current.contains(e.target)
-//     ) {
-//       onClose();
-//     }
-//   };
-
-//   document.addEventListener("mousedown", handleClick);
-
-//   return () => {
-//     document.removeEventListener(
-//       "mousedown",
-//       handleClick
-//     );
-//   };
-// }, []);
+  
 
   //
   return (
     <>
-      <div className="flex h-16 bg-[var(--university-ink)] items-center text-white w-screen fixed ">
+      <div  className="flex h-16 bg-[var(--university-ink)] items-center text-white w-screen fixed ">
         <div className="w-[40%] flex items-center ps-2 ">
           <img
             src={logo}
@@ -37,7 +19,7 @@ const Navbar = () => {
             className="rounded-full  bg-[#eef7fc] w-9.5 "
           />
           <nav className="ps-2">
-            <NavLink to="/" end>
+            <NavLink to="/dashboard" end>
               <p className="font-bold text-[--navbar-text] text-[12px] lg:text-[16px]">
                 Dashboard
               </p>
@@ -49,7 +31,7 @@ const Navbar = () => {
         </div>
         {/* profile dropdown */}
         <div
-          className=" w-full md:w-72 absolute top-0  md:right-3 "
+          className=" w-full md:w-72 absolute z-50 top-0  md:right-3 "
           style={{ display: profileClicked ? "block" : "none" }}
         >
           {profileClicked && (

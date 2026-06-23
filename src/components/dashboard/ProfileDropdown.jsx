@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef ,useEffect} from "react";
 import { NavLink } from "react-router-dom";
 import {
   XIcon,
@@ -11,6 +11,27 @@ import { menuConfig } from "../../config/menuConfig";
 const ProfileDropdown = ({ onClose }) => {
   const role = "superAdmin";
   const menuItems = menuConfig[role] || [];
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target)
+      ) {
+        onClose();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClick);
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClick
+      );
+    };
+  }, [onClose]);
 
   const navLinkClass = ({ isActive }) =>
     `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm
@@ -22,7 +43,7 @@ const ProfileDropdown = ({ onClose }) => {
      }`;
 
   return (
-    <div
+    <div ref={dropdownRef}
       className="
         w-full overflow-hidden rounded-2xl
         bg-[var(--navbar-bg)]
