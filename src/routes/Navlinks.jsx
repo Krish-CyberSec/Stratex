@@ -1,6 +1,3 @@
-
-
-// export default Navlinks;
 import { Routes, Route } from "react-router-dom";
 
 import DashboardLayout from "../layout/DashboardLayout";
@@ -13,17 +10,19 @@ import SetupPassword from "../pages/auth/SetupPassword";
 import Support from "../pages/Support";
 import Error from "../pages/Error";
 import Users from "../pages/admin/users/Users";
+import CreateUser from "../pages/admin/users/CreateUser";
 import Schools from "../pages/admin/schools/Schools";
 import Programs from "../pages/admin/programs/Programs";
 import Subjects from "../pages/admin/subjects/Subjects";
 import Notifications from "../components/dashboard/Notifications";
+import Notifications from "../components/dashboard/Notifications";
 import Notices from "../pages/admin/notices/Notices";
 import Events from "../pages/admin/events/Events";
 import Profile from "../pages/admin/profile/profile";
+
 const Navlinks = () => {
   return (
     <Routes>
-      {/* main website */}
       <Route path="/" element={<Home />} />
       <Route path="/support" element={<Support />} />
       <Route path="/login" element={<Login />} />
@@ -82,14 +81,8 @@ const Navlinks = () => {
         <Route path="notifications" element={<Notifications />} />
 
         <Route path="notices" element={<Notices />} />
-
         <Route path="events" element={<Events />} />
-
         <Route path="profile" element={<Profile />} />
-
-
-
-
       </Route>
     </Routes>
   );
