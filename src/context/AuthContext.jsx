@@ -1,29 +1,58 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+  getCurrentUser as fetchCurrentUser,
+  logoutUser,
+} from "../services/authService";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] =
-    useState(false);
+  const [loading, setLoading] = useState(true);
 
   const login = (userData) => {
     setUser(userData);
-    setIsAuthenticated(true);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await logoutUser();
+    } finally {
+      setUser(null);
+    }
+  };
+
+  const getCurrentUser = useCallback(async () => {
+    try {
+      const { data } = await fetchCurrentUser();
+      setUser(data);
+      return data;
+    } catch {
+      setUser(null);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    getCurrentUser();
+  }, [getCurrentUser]);
+
+  const clearUser = () => {
     setUser(null);
-    setIsAuthenticated(false);
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated,
+        loading,
+        isAuthenticated: Boolean(user),
         login,
         logout,
+        clearUser,
+        getCurrentUser,
       }}
     >
       {children}

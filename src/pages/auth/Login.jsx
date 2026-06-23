@@ -1,20 +1,7 @@
 import LoginForm from "../../components/login/LoginForm";
 import Carousel from "../../components/common/Carousel";
-import { loginUser } from "../../services/authService";
-import { useAuth } from "../../context/AuthContext";
 
 const Login = () => {
-  const { login } = useAuth();
-
-  const handleSubmit = async () => {
-    try {
-      const { data } = await loginUser(formData);
-
-      login(data.user);
-    } catch (err) {
-      console.log(err);
-    }
-  };
   return (
     <div className="relative h-screen overflow-hidden bg-[var(--university-surface-soft)]">
       {/* <div className="h-2 bg-[var(--university-red)]" />

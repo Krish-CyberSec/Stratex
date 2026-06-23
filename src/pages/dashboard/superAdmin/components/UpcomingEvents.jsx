@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { CalendarDays, MoreVertical } from "lucide-react";
+import { getUpcomingEvents } from "../../../../services/dashboardService";
 
 const upcomingEvents = [
   {
@@ -29,6 +30,48 @@ const panelScrollClassName =
   "min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:var(--university-border)_transparent]";
 
 const UpcomingEvents = () => {
+  const [apiEvents, setApiEvents] = useState(null);
+
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        const { data } = await getUpcomingEvents();
+        setApiEvents(data.events || []);
+      } catch {
+        setApiEvents(null);
+      }
+    };
+
+    loadEvents();
+  }, []);
+
+  const events = useMemo(() => {
+    if (!apiEvents) {
+      return upcomingEvents;
+    }
+
+    return apiEvents.map((event) => {
+      const startDate = event.startDate ? new Date(event.startDate) : null;
+
+      return {
+        title: event.title,
+        date: startDate
+          ? startDate.toLocaleDateString(undefined, {
+              day: "2-digit",
+              month: "short",
+            })
+          : "TBD",
+        time: startDate
+          ? startDate.toLocaleTimeString(undefined, {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "Time TBD",
+        location: event.location || "Location TBD",
+      };
+    });
+  }, [apiEvents]);
+
   return (
     <div className={panelClassName}>
       <div className="flex items-center justify-between gap-3 border-b border-[var(--university-border)] bg-[linear-gradient(180deg,var(--university-surface),var(--university-surface-soft))] px-4 py-4 sm:px-5">
@@ -53,7 +96,7 @@ const UpcomingEvents = () => {
       </div>
 
       <div className={`${panelScrollClassName} space-y-2 p-3 sm:p-4`}>
-        {upcomingEvents.map((event) => (
+        {events.map((event) => (
           <div
             key={event.title}
             className="grid min-w-0 grid-cols-[64px_minmax(0,1fr)] gap-3 rounded-xl p-2.5 transition hover:bg-[var(--university-surface-soft)]"

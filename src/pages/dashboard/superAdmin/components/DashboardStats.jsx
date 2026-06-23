@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import DashboardStatCard from "../../../../components/common/DashboardStatCard";
+import { getDashboardStats } from "../../../../services/dashboardService";
 
 const dashboardStats = [
   {
@@ -76,9 +77,43 @@ const dashboardStats = [
 ];
 
 const DashboardStats = () => {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const { data } = await getDashboardStats();
+        setStats(data);
+      } catch {
+        setStats(null);
+      }
+    };
+
+    loadStats();
+  }, []);
+
+  const renderedStats = useMemo(() => {
+    const values = {
+      "Total Schools": stats?.totalSchools,
+      Users: stats?.totalUsers,
+      Programs: stats?.totalPrograms,
+      Subjects: stats?.totalSubjects,
+      Notices: stats?.totalNotices,
+      Events: stats?.totalEvents,
+    };
+
+    return dashboardStats.map((stat) => ({
+      ...stat,
+      value:
+        values[stat.title] !== undefined
+          ? String(values[stat.title])
+          : stat.value,
+    }));
+  }, [stats]);
+
   return (
     <section className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
-      {dashboardStats.map((stat) => (
+      {renderedStats.map((stat) => (
         <DashboardStatCard
           key={stat.title}
           title={stat.title}

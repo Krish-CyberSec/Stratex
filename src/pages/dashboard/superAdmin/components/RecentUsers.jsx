@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { MoreVertical, UsersRound } from "lucide-react";
+import { getRecentUsers } from "../../../../services/dashboardService";
 
 const recentUsers = [
   {
@@ -61,6 +62,10 @@ const getInitials = (name) =>
     .map((part) => part[0])
     .join("");
 
+const getFullName = (user) =>
+  user.fullName ||
+  [user.firstName, user.middleName, user.lastName].filter(Boolean).join(" ");
+
 const panelClassName =
   "flex h-[430px] min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--university-border)] bg-[var(--university-surface)] shadow-sm";
 
@@ -68,6 +73,35 @@ const panelScrollClassName =
   "min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:var(--university-border)_transparent]";
 
 const RecentUsers = () => {
+  const [apiUsers, setApiUsers] = useState(null);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const { data } = await getRecentUsers();
+        setApiUsers(data.users || []);
+      } catch {
+        setApiUsers(null);
+      }
+    };
+
+    loadUsers();
+  }, []);
+
+  const users = useMemo(() => {
+    if (!apiUsers) {
+      return recentUsers;
+    }
+
+    return apiUsers.map((user, index) => ({
+      name: getFullName(user) || "Unnamed User",
+      role: user.roles?.[0] || "User",
+      school: user.schoolId?.name || "Not assigned",
+      createdBy: getFullName(user.createdBy || {}) || "System",
+      tone: ["blue", "sky", "gold", "ink"][index % 4],
+    }));
+  }, [apiUsers]);
+
   return (
     <div className={panelClassName}>
       <div className="flex items-center justify-between gap-3 border-b border-[var(--university-border)] bg-[linear-gradient(180deg,var(--university-surface),var(--university-surface-soft))] px-4 py-4 sm:px-5">
@@ -101,7 +135,7 @@ const RecentUsers = () => {
       <div
         className={`${panelScrollClassName} divide-y divide-[var(--university-border)] px-4 sm:px-5`}
       >
-        {recentUsers.map((user) => (
+        {users.map((user) => (
           <div
             key={user.name}
             className="grid grid-cols-1 gap-3 py-4 text-sm transition md:grid-cols-[1.05fr_0.72fr_1.12fr_0.72fr] md:items-center"

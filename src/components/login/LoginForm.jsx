@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
 import styled from "styled-components";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import Button from "../common/Button";
 import logo from "../../assets/loginLogo.png";
-import axios from "axios";
+import { loginUser } from "../../services/authService";
+import { useAuth } from "../../context/AuthContext";
 const AtIcon = () => (
   <svg
     aria-hidden="true"
@@ -80,12 +81,20 @@ const StyledLink = styled(NavLink)`
 
 const roles = [
   { id: "student", label: "Student", placeholder: "student@university.edu.in" },
-  { id: "faculty", label: "Faculty", placeholder: "faculty@university.edu.in" },
+  {
+    id: "faculty",
+    label: "Faculty",
+    placeholder: "faculty or admin email",
+    allowedRoles: ["faculty", "superAdmin", "schoolAdmin", "examCell"],
+  },
 ];
 
 const LoginForm = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const emailRef = useRef(null);
   const passRef = useRef(null);
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState(roles[0]);
 
@@ -95,36 +104,27 @@ const LoginForm = () => {
     const password = passRef.current.value;
 
     try {
-      const { data } = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        {
-          email,
-          password,
-        },
-        {
-          withCredentials: true,
-        },
-      );
+      setError("");
+      const { data } = await loginUser({ email, password });
 
       const roles = data.user.roles;
 
-      if (!roles.includes(selectedRole.id)) {
-        alert("Selected role does not match your account");
+      const allowedRoles = selectedRole.allowedRoles || [selectedRole.id];
+
+      if (!roles.some((role) => allowedRoles.includes(role))) {
+        setError("Selected role does not match your account.");
         return;
       }
-      console.log(data);
-    } catch (err) {
-      alert(err.response?.data?.message || "Login Failed");
-    } finally {
-      emailRef.current.value = "";
-      passRef.current.value = "";
-    }
 
-    // console.log("Login submitted", {
-    //   role: selectedRole.id,
-    //   email,
-    //   hasPassword: Boolean(password),
-    // });
+      login(data.user);
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      setError(err.response?.data?.message || "Login failed.");
+    } finally {
+      if (passRef.current) {
+        passRef.current.value = "";
+      }
+    }
   };
 
   return (
@@ -137,7 +137,7 @@ const LoginForm = () => {
             alt="K.R. Mangalam University"
             className="mx-auto mb-5 h-auto w-full max-w-[320px] object-contain"
           />
-
+          {/* <p>Powered by Stratex</p> */}
           <h1 className="pb-2 text-center text-2xl font-semibold text-[var(--university-ink)]">
             {selectedRole.label} Login
           </h1>
@@ -171,6 +171,12 @@ const LoginForm = () => {
             );
           })}
         </div>
+
+        {error && (
+          <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+            {error}
+          </p>
+        )}
 
         <form
           action=""

@@ -11,3 +11,7 @@ export const logoutUser = () => {
 export const getCurrentUser = () => {
   return axiosInstance.get("/auth/me");
 };
+
+export const setupPassword = (data) => {
+  return axiosInstance.post("/auth/setup-password", data);
+};
