@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Bell, MoreVertical } from "lucide-react";
+import { getRecentNotices } from "../../../../services/dashboardService";
 
 const recentNotices = [
   {
@@ -35,6 +36,41 @@ const panelScrollClassName =
   "min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:var(--university-border)_transparent]";
 
 const RecentNotices = () => {
+  const [apiNotices, setApiNotices] = useState(null);
+
+  useEffect(() => {
+    const loadNotices = async () => {
+      try {
+        const { data } = await getRecentNotices();
+        setApiNotices(data.notices || []);
+      } catch {
+        setApiNotices(null);
+      }
+    };
+
+    loadNotices();
+  }, []);
+
+  const notices = useMemo(() => {
+    if (!apiNotices) {
+      return recentNotices;
+    }
+
+    return apiNotices.map((notice, index) => ({
+      title: notice.title,
+      meta:
+        notice.createdBy?.fullName ||
+        [notice.createdBy?.firstName, notice.createdBy?.lastName]
+          .filter(Boolean)
+          .join(" ") ||
+        "Administration",
+      time: notice.publishedAt
+        ? new Date(notice.publishedAt).toLocaleDateString()
+        : "Recently",
+      tone: ["blue", "gold", "sky"][index % 3],
+    }));
+  }, [apiNotices]);
+
   return (
     <div className={panelClassName}>
       <div className="flex items-center justify-between gap-3 border-b border-[var(--university-border)] bg-[linear-gradient(180deg,var(--university-surface),var(--university-surface-soft))] px-4 py-4 sm:px-5">
@@ -59,7 +95,7 @@ const RecentNotices = () => {
       </div>
 
       <div className={`${panelScrollClassName} space-y-1 p-3 sm:p-4`}>
-        {recentNotices.map((notice) => (
+        {notices.map((notice) => (
           <div
             key={notice.title}
             className="flex min-w-0 gap-3 rounded-xl p-2.5 transition hover:bg-[var(--university-surface-soft)]"
