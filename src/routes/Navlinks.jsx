@@ -15,7 +15,6 @@ import Schools from "../pages/admin/schools/Schools";
 import Programs from "../pages/admin/programs/Programs";
 import Subjects from "../pages/admin/subjects/Subjects";
 import Notifications from "../components/dashboard/Notifications";
-import Notifications from "../components/dashboard/Notifications";
 import Notices from "../pages/admin/notices/Notices";
 import Events from "../pages/admin/events/Events";
 import Profile from "../pages/admin/profile/profile";
@@ -29,7 +28,6 @@ const Navlinks = () => {
       <Route path="/setup-password/:token" element={<SetupPassword />} />
       <Route path="/error" element={<Error />}></Route>
 
-      {/* Dashboard */}
       <Route
         path="/dashboard"
         element={
@@ -50,7 +48,14 @@ const Navlinks = () => {
             </ProtectedRoute>
           }
         />
-
+        <Route
+          path="users/create"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin"]}>
+              <CreateUser />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="schools"
           element={
@@ -72,7 +77,9 @@ const Navlinks = () => {
         <Route
           path="subjects"
           element={
-            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin", "faculty"]}>
+            <ProtectedRoute
+              allowedRoles={["superAdmin", "schoolAdmin", "faculty"]}
+            >
               <Subjects />
             </ProtectedRoute>
           }
