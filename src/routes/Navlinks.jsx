@@ -34,6 +34,7 @@ const Navlinks = () => {
       <Route path="/setup-password/:token" element={<SetupPassword />} />
       <Route path="/error" element={<Error />}></Route>
 
+      {/* Dashboard */}
       <Route
         path="/dashboard"
         element={
@@ -84,9 +85,7 @@ const Navlinks = () => {
         <Route
           path="subjects"
           element={
-            <ProtectedRoute
-              allowedRoles={["superAdmin", "schoolAdmin", "faculty"]}
-            >
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin", "faculty"]}>
               <Subjects />
             </ProtectedRoute>
           }
