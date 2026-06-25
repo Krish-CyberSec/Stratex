@@ -1,9 +1,15 @@
-import React from 'react'
+import React from "react";
+import SchoolStatCard from "./components/SchoolStatCard";
 
 const Schools = () => {
   return (
-    <div>Schools</div>
-  )
-}
+    <>
+      <div className="mt-4">
+          <SchoolStatCard/>
+      </div>
 
-export default Schools
+    </>
+  );
+};
+
+export default Schools;
