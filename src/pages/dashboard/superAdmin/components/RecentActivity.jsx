@@ -36,8 +36,7 @@ const getInitials = (name) =>
     .join("");
 
 const getFullName = (user) =>
-  user?.fullName ||
-  [user?.firstName, user?.lastName].filter(Boolean).join(" ");
+  user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(" ");
 
 const getRelativeDate = (date) =>
   date ? new Date(date).toLocaleString() : "Recently";
@@ -70,6 +69,7 @@ const RecentActivity = () => {
     }
 
     return apiActivities.map((activity) => ({
+      id: activity._id,
       name: getFullName(activity.performedBy) || "System",
       detail: activity.remarks || `${activity.action} in ${activity.module}`,
       time: getRelativeDate(activity.createdAt),
@@ -103,7 +103,7 @@ const RecentActivity = () => {
       <div className={`${panelScrollClassName} space-y-1 p-3 sm:p-4`}>
         {activities.map((activity) => (
           <div
-            key={`${activity.reference}-${activity.time}-${activity.detail}`}
+            key={`${activity.id}-${activity.reference}-${activity.time}-${activity.detail}`}
             className="flex min-w-0 gap-3 rounded-xl p-2.5 transition hover:bg-[var(--university-surface-soft)]"
           >
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--university-blue)_12%,white)] text-sm font-semibold text-[var(--university-blue-dark)]">

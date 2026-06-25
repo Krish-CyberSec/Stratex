@@ -39,6 +39,19 @@ export const AuthProvider = ({ children }) => {
     getCurrentUser();
   }, [getCurrentUser]);
 
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setUser(null);
+      setLoading(false);
+    };
+
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+
+    return () => {
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
+    };
+  }, []);
+
   const clearUser = () => {
     setUser(null);
   };

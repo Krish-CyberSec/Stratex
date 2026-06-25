@@ -1,5 +1,5 @@
 import React, { useRef ,useEffect} from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   XIcon,
   HomeFillIcon,
@@ -7,11 +7,20 @@ import {
 } from "@primer/octicons-react";
 
 import { menuConfig } from "../../config/menuConfig";
+import { useAuth } from "../../context/AuthContext";
 
 const ProfileDropdown = ({ onClose }) => {
   const role = "superAdmin";
   const menuItems = menuConfig[role] || [];
   const dropdownRef = useRef(null)
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    onClose();
+    navigate("/login", { replace: true });
+  };
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -130,9 +139,9 @@ const ProfileDropdown = ({ onClose }) => {
         <div className="my-2 border-t border-white/10" />
 
         {/* Sign Out */}
-        <NavLink
-          to="/"
-          onClick={onClose}
+        <button
+          type="button"
+          onClick={handleLogout}
           className="
             flex items-center gap-3 rounded-lg
             px-3 py-2.5 text-sm
@@ -145,7 +154,7 @@ const ProfileDropdown = ({ onClose }) => {
         >
           <SignOutIcon size={16} />
           <span>Sign Out</span>
-        </NavLink>
+        </button>
       </nav>
     </div>
   );
