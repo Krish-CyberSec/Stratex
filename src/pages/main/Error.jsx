@@ -1,7 +1,7 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import styled from "styled-components";
-import logo from "../assets/logo.png";
+import logo from "../../assets/logo.png";
 
 const StyledLink = styled(NavLink)`
   background: var(--university-blue-dark);
