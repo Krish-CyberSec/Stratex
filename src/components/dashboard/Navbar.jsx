@@ -11,7 +11,7 @@ const Navbar = () => {
   //
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-40 flex h-16 items-center bg-[var(--university-ink)] text-white">
+      <div  className="flex h-16 bg-[var(--university-ink)] items-center text-white w-screen fixed ">
         <div className="w-[40%] flex items-center ps-2 ">
           <img
             src={logo}
@@ -30,11 +30,16 @@ const Navbar = () => {
           </nav>
         </div>
         {/* profile dropdown */}
-        {profileClicked && (
-  <div className="fixed top-16 right-3 z-50 w-72">
-    <ProfileDropdown onClose={() => setProfileClicked(false)} />
-  </div>
-)}
+        <div
+          className=" w-full md:w-72 absolute z-50 top-0  md:right-3 "
+          style={{ display: profileClicked ? "block" : "none" }}
+        >
+          {profileClicked && (
+            <div className="w-full md:w-72 absolute top-0 md:top-13 md:right-3 z-50">
+              <ProfileDropdown onClose={() => setProfileClicked(false)} />
+            </div>
+          )}
+        </div>
         <div className="w-[60%]  flex flex-row-reverse  items-center px-2 gap-3">
           <div className="group">
             <img

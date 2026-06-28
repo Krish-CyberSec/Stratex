@@ -1,8 +1,7 @@
 import { Routes, Route } from "react-router-dom";
-
 import DashboardLayout from "../layout/DashboardLayout";
 import ProtectedRoute from "../components/dashboard/ProtectedRoute";
-
+import PublicRoute from "../components/dashboard/PublicRoute";
 import DashboardHome from "../pages/dashboard/DashboardHome";
 import Home from "../pages/main/Home";
 import Login from "../pages/auth/Login";
@@ -14,7 +13,7 @@ import CreateUser from "../pages/admin/users/CreateUser";
 import Schools from "../pages/admin/schools/Schools";
 import Programs from "../pages/admin/programs/Programs";
 import Subjects from "../pages/admin/subjects/Subjects";
-import Notifications from "../components/dashboard/Notifications";
+import Notification from "../components/dashboard/Notifications";
 import Notices from "../pages/admin/notices/Notices";
 import Events from "../pages/admin/events/Events";
 import Profile from "../pages/admin/profile/profile";
@@ -24,10 +23,18 @@ const Navlinks = () => {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/support" element={<Support />} />
-      <Route path="/login" element={<Login />} />
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        }
+      />
       <Route path="/setup-password/:token" element={<SetupPassword />} />
       <Route path="/error" element={<Error />}></Route>
 
+      {/* Dashboard */}
       <Route
         path="/dashboard"
         element={
@@ -49,13 +56,14 @@ const Navlinks = () => {
           }
         />
         <Route
-          path="users/create"
-          element={
-            <ProtectedRoute allowedRoles={["superAdmin"]}>
-              <CreateUser />
-            </ProtectedRoute>
-          }
-        />
+            path="users/create"
+            element={
+              <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
+                <CreateUser />
+              </ProtectedRoute>
+            }
+          />
+
         <Route
           path="schools"
           element={
@@ -77,15 +85,13 @@ const Navlinks = () => {
         <Route
           path="subjects"
           element={
-            <ProtectedRoute
-              allowedRoles={["superAdmin", "schoolAdmin", "faculty"]}
-            >
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin", "faculty"]}>
               <Subjects />
             </ProtectedRoute>
           }
         />
 
-        <Route path="notifications" element={<Notifications />} />
+        <Route path="notifications" element={<Notification />} />
 
         <Route path="notices" element={<Notices />} />
         <Route path="events" element={<Events />} />
