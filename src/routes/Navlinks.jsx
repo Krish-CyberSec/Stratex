@@ -14,6 +14,7 @@ import Schools from "../pages/admin/schools/Schools";
 import Programs from "../pages/admin/programs/Programs";
 import Subjects from "../pages/admin/subjects/Subjects";
 import Notification from "../components/dashboard/Notifications";
+import NotificationDetail from "../components/dashboard/NotificationDetail";
 import Notices from "../pages/admin/notices/Notices";
 import Events from "../pages/admin/events/Events";
 import Profile from "../pages/admin/profile/profile";
@@ -92,6 +93,7 @@ const Navlinks = () => {
         />
 
         <Route path="notifications" element={<Notification />} />
+        <Route path="notifications/:id" element={<NotificationDetail />} />
 
         <Route path="notices" element={<Notices />} />
         <Route path="events" element={<Events />} />

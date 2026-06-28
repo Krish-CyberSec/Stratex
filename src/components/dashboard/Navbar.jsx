@@ -1,17 +1,107 @@
-import React, { useState,useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import logo from "../../assets/logo.png";
 import { InboxIcon } from "@primer/octicons-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import ProfileDropdown from "./ProfileDropdown";
+import {
+  getNotifications,
+  getUnreadNotificationCount,
+  markNotificationRead,
+} from "../../services/notificationService";
+import {
+  formatShortDate,
+  getNotificationDocument,
+  getNotificationId,
+  getSenderName,
+  truncateText,
+} from "../../config/notificationConfig";
 // import {} from 'lucide-react'
 const Navbar = () => {
   const [profileClicked, setProfileClicked] = useState(false);
-  
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationFilter, setNotificationFilter] = useState("all");
+  const [unreadCount, setUnreadCount] = useState(0);
+  const notificationRef = useRef(null);
+  const navigate = useNavigate();
+
+  const getPreviewNotifications = (items) => {
+    return notificationFilter === "unread"
+      ? items.filter((item) => !item.isRead)
+      : items;
+  };
+
+  const loadNotificationPreview = async () => {
+    setNotificationLoading(true);
+
+    try {
+      const [feedResponse, countResponse] = await Promise.all([
+        getNotifications({ limit: 20, sortBy: "createdAt", order: "desc" }),
+        getUnreadNotificationCount(),
+      ]);
+      const apiNotifications = feedResponse.data?.data?.notifications || [];
+
+      setNotifications(apiNotifications);
+      setUnreadCount(countResponse.data?.data?.unreadCount || 0);
+    } catch {
+      setNotifications([]);
+      setUnreadCount(0);
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadNotificationPreview();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target)
+      ) {
+        setNotificationOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleNotificationToggle = () => {
+    setNotificationOpen((prev) => !prev);
+    setProfileClicked(false);
+    loadNotificationPreview();
+  };
+
+  const handleNotificationClick = async (item) => {
+    const notificationId = getNotificationId(item);
+
+    try {
+      if (!String(notificationId).startsWith("demo-")) {
+        await markNotificationRead(notificationId);
+      }
+    } catch {
+      // Keep the dropdown usable even if the request fails.
+    }
+
+    setNotificationOpen(false);
+    navigate(`/dashboard/notifications/${notificationId}`, {
+      state: { notificationItem: item },
+    });
+  };
+
+  const previewNotifications = getPreviewNotifications(notifications);
 
   //
   return (
     <>
-      <div  className="flex h-16 bg-[var(--university-ink)] items-center text-white w-screen fixed ">
+      <div  className="fixed z-50 flex h-16 w-screen items-center bg-[var(--university-ink)] text-white ">
         <div className="w-[40%] flex items-center ps-2 ">
           <img
             src={logo}
@@ -57,19 +147,136 @@ const Navbar = () => {
 
           {/* quick links  */}
 
-          <div className="hidden sm:block">
-            <div>
-              <nav>
-                <NavLink className="relative group">
-                  <InboxIcon className="w-8 h-8 p-2 border-white border-[0.2px] rounded-lg group-hover:bg-[var(--navbar-hover)]" />
+          <div className="hidden sm:block" ref={notificationRef}>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={handleNotificationToggle}
+                className="relative rounded-lg border border-white/30 p-2 transition hover:bg-[var(--navbar-hover)]"
+                aria-label="Open notifications"
+              >
+                <InboxIcon className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--university-red)] px-1 text-[10px] font-bold text-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
 
-                  <div className="absolute top-8 right-0 z-10 h-8 w-65 flex items-center rounded-lg rounded-tr-xs bg-[var(--stratex-navy-light20)] opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible">
-                    <p className="pl-3 text-xs text-[var(--text-inverse)]">
-                      You have no unread notifications
-                    </p>
+              {notificationOpen && (
+                <div className="absolute right-0 top-11 z-50 w-[min(25rem,calc(100vw-1rem))] overflow-hidden rounded-3xl border border-[var(--university-border)] bg-white text-[var(--university-ink)] shadow-[0_24px_70px_rgba(15,39,68,0.24)]">
+                  <div className="flex items-center justify-between gap-3 border-b border-[var(--university-border)] px-5 py-4">
+                    <div>
+                      <h3 className="text-base font-semibold text-[var(--university-ink)]">
+                        Notifications
+                      </h3>
+                      <p className="mt-0.5 text-xs text-[var(--university-muted)]">
+                        {unreadCount
+                          ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"}`
+                          : "You are all caught up"}
+                      </p>
+                    </div>
+
+                    <div className="flex rounded-xl bg-[var(--university-surface-soft)] p-1 text-xs font-semibold">
+                      {[
+                        ["all", "All"],
+                        ["unread", "Unread"],
+                      ].map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setNotificationFilter(value)}
+                          className={`rounded-lg px-3 py-1.5 transition ${
+                            notificationFilter === value
+                              ? "bg-white text-[var(--university-ink)] shadow-sm"
+                              : "text-[var(--university-muted)] hover:text-[var(--university-ink)]"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </NavLink>
-              </nav>
+
+                  <div className="max-h-[28rem] overflow-y-scroll [scrollbar-width:thin] [scrollbar-color:var(--university-blue)_var(--university-surface-soft)]">
+                    {notificationLoading ? (
+                      <div className="px-5 py-10 text-center text-sm text-[var(--university-muted)]">
+                        Loading notifications...
+                      </div>
+                    ) : previewNotifications.length ? (
+                      previewNotifications.map((item) => {
+                        const notification = getNotificationDocument(item);
+                        const notificationId = getNotificationId(item);
+                        const senderName = getSenderName(notification.sender);
+
+                        return (
+                          <button
+                            type="button"
+                            key={notificationId}
+                            onClick={() => handleNotificationClick(item)}
+                            className="group flex w-full min-w-0 gap-4 border-b border-[var(--university-border)] px-5 py-4 text-left transition last:border-b-0 hover:bg-[var(--university-surface-soft)]"
+                          >
+                            <div className="relative shrink-0">
+                              <img
+                                src={
+                                  notification.sender?.profilePicture ||
+                                  "https://tse1.mm.bing.net/th/id/OIP.hCfHyL8u8XAbreXuaiTMQgHaHZ?r=0&rs=1&pid=ImgDetMain&o=7&rm=3"
+                                }
+                                alt=""
+                                className="h-11 w-11 rounded-full object-cover ring-2 ring-[var(--university-surface-soft)]"
+                              />
+                              <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--university-blue)] text-[9px] font-bold uppercase text-white ring-2 ring-white">
+                                {(notification.type || "n").slice(0, 1)}
+                              </span>
+                            </div>
+
+                            <span className="min-w-0 flex-1">
+                              <span className="flex min-w-0 items-center gap-2">
+                                <span className="truncate text-sm font-semibold text-[var(--university-ink)]">
+                                  {senderName}
+                                </span>
+                                <span className="shrink-0 text-xs text-[var(--university-muted)]">
+                                  {formatShortDate(
+                                    notification.createdAt || item.deliveredAt,
+                                  )}
+                                </span>
+                              </span>
+
+                              <span className="mt-1 block truncate text-sm font-semibold text-[var(--university-ink)]">
+                                {notification.title || "Notification"}
+                              </span>
+                              <span className="mt-1 line-clamp-2 block text-xs leading-5 text-[var(--university-muted)]">
+                                {truncateText(
+                                  notification.message || "No message available",
+                                  118,
+                                )}
+                              </span>
+                            </span>
+
+                            {!item.isRead && (
+                              <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--success)]" />
+                            )}
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className="px-5 py-10 text-center text-sm text-[var(--university-muted)]">
+                        No notifications match this filter.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-[var(--university-border)] bg-[var(--university-surface-soft)] px-5 py-3 text-right">
+                    <NavLink
+                      to="/dashboard/notifications"
+                      onClick={() => setNotificationOpen(false)}
+                      className="text-sm font-semibold text-[var(--university-blue-dark)] transition hover:text-[var(--university-blue)]"
+                    >
+                      View all notifications
+                    </NavLink>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
