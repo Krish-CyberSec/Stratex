@@ -57,6 +57,18 @@ export const getSenderName = (sender) =>
   [sender?.firstName, sender?.lastName].filter(Boolean).join(" ") ||
   "Administration";
 
+export const getSenderImage = (sender) =>
+  sender?.profileImage || "";
+
+export const getInitials = (name = "User") =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+
 export const getAudienceLabel = (audience = {}) => {
   if (audience.allUsers) {
     return "All tracks";

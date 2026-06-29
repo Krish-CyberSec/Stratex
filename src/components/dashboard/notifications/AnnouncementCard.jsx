@@ -10,6 +10,7 @@ import {
   getSenderName,
   truncateText,
 } from "../../../config/notificationConfig";
+import NotificationAvatar from "./NotificationAvatar";
 
 const AnnouncementCard = ({ clearing, item, onClear }) => {
   const notification = getNotificationDocument(item);
@@ -21,14 +22,7 @@ const AnnouncementCard = ({ clearing, item, onClear }) => {
     <article className="rounded-3xl border border-[var(--university-border)] bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-4">
-          <img
-            src={
-              notification.sender?.profilePicture ||
-              "https://tse1.mm.bing.net/th/id/OIP.hCfHyL8u8XAbreXuaiTMQgHaHZ?r=0&rs=1&pid=ImgDetMain&o=7&rm=3"
-            }
-            alt=""
-            className="h-11 w-11 rounded-full object-cover ring-2 ring-[var(--university-surface-soft)]"
-          />
+          <NotificationAvatar sender={notification.sender} />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-[var(--university-ink)]">
               {senderName}

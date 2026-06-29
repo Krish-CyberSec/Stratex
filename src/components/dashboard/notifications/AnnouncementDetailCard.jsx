@@ -8,6 +8,7 @@ import {
   getNotificationTags,
   getSenderName,
 } from "../../../config/notificationConfig";
+import NotificationAvatar from "./NotificationAvatar";
 
 const InfoBlock = ({ label, value }) => (
   <div>
@@ -62,14 +63,7 @@ const AnnouncementDetailCard = ({ item }) => {
         </h1>
 
         <div className="mt-7 flex items-center gap-4">
-          <img
-            src={
-              notification.sender?.profilePicture ||
-              "https://tse1.mm.bing.net/th/id/OIP.hCfHyL8u8XAbreXuaiTMQgHaHZ?r=0&rs=1&pid=ImgDetMain&o=7&rm=3"
-            }
-            alt=""
-            className="h-11 w-11 rounded-full object-cover"
-          />
+          <NotificationAvatar sender={notification.sender} />
           <div>
             <p className="text-sm font-semibold text-[var(--university-ink)]">
               {senderName}

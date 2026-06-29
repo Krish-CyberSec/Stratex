@@ -15,6 +15,7 @@ import {
   getSenderName,
   truncateText,
 } from "../../config/notificationConfig";
+import NotificationAvatar from "./notifications/NotificationAvatar";
 // import {} from 'lucide-react'
 const Navbar = () => {
   const [profileClicked, setProfileClicked] = useState(false);
@@ -216,19 +217,10 @@ const Navbar = () => {
                             onClick={() => handleNotificationClick(item)}
                             className="group flex w-full min-w-0 gap-4 border-b border-[var(--university-border)] px-5 py-4 text-left transition last:border-b-0 hover:bg-[var(--university-surface-soft)]"
                           >
-                            <div className="relative shrink-0">
-                              <img
-                                src={
-                                  notification.sender?.profilePicture ||
-                                  "https://tse1.mm.bing.net/th/id/OIP.hCfHyL8u8XAbreXuaiTMQgHaHZ?r=0&rs=1&pid=ImgDetMain&o=7&rm=3"
-                                }
-                                alt=""
-                                className="h-11 w-11 rounded-full object-cover ring-2 ring-[var(--university-surface-soft)]"
-                              />
-                              <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--university-blue)] text-[9px] font-bold uppercase text-white ring-2 ring-white">
-                                {(notification.type || "n").slice(0, 1)}
-                              </span>
-                            </div>
+                            <NotificationAvatar
+                              sender={notification.sender}
+                              badge={(notification.type || "n").slice(0, 1)}
+                            />
 
                             <span className="min-w-0 flex-1">
                               <span className="flex min-w-0 items-center gap-2">
