@@ -1,7 +1,7 @@
 import axiosInstance from "../utils/axiosInstance";
 
-export const getPrograms = () =>
-  axiosInstance.get("/programs");
+export const getPrograms = (params = {}) =>
+  axiosInstance.get("/programs", { params });
 
 export const createProgram = (data) =>
   axiosInstance.post("/programs", data);
