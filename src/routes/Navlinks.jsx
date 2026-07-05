@@ -11,6 +11,8 @@ import Error from "../pages/main/Error";
 import Users from "../pages/admin/users/Users";
 import CreateUser from "../pages/admin/users/CreateUser";
 import Schools from "../pages/admin/schools/Schools";
+import CreateSchool from "../pages/admin/schools/CreateSchool";
+import SchoolView from "../pages/admin/schools/SchoolView";
 import Programs from "../pages/admin/programs/Programs";
 import Subjects from "../pages/admin/subjects/Subjects";
 import Notification from "../components/dashboard/Notifications";
@@ -70,6 +72,22 @@ const Navlinks = () => {
           element={
             <ProtectedRoute allowedRoles={["superAdmin"]}>
               <Schools />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="schools/create"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin"]}>
+              <CreateSchool />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="schools/:id"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin"]}>
+              <SchoolView />
             </ProtectedRoute>
           }
         />
