@@ -51,10 +51,10 @@ const normalizeUser = (user) => {
 };
 const USERS_PER_PAGE = 10;
 const Users = () => {
- const [menuPosition, setMenuPosition] = useState({
-  top: 0,
-  left: 0,
-});
+  const [menuPosition, setMenuPosition] = useState({
+    top: 0,
+    left: 0,
+  });
   const menuButtonRefs = useRef({});
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -119,22 +119,22 @@ const Users = () => {
   const navigate = useNavigate();
   const location = useLocation();
   useEffect(() => {
-  function handleClickOutside(event) {
-    if (
-      openMenu &&
-      !event.target.closest(".floating-user-menu") &&
-      !event.target.closest(".menu-trigger")
-    ) {
-      setOpenMenu(null);
+    function handleClickOutside(event) {
+      if (
+        openMenu &&
+        !event.target.closest(".floating-user-menu") &&
+        !event.target.closest(".menu-trigger")
+      ) {
+        setOpenMenu(null);
+      }
     }
-  }
 
-  document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
 
-  return () => {
-    document.removeEventListener("mousedown", handleClickOutside);
-  };
-}, [openMenu]);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openMenu]);
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, roleFilter, sortBy]);
@@ -560,37 +560,42 @@ py-1.5
                             ref={(el) =>
                               (menuButtonRefs.current[user._id] = el)
                             }
-                          onClick={(e) => {
-  e.stopPropagation();
+                            onClick={(e) => {
+                              e.stopPropagation();
 
-  const rect =
-    menuButtonRefs.current[user._id]?.getBoundingClientRect();
+                              const rect =
+                                menuButtonRefs.current[
+                                  user._id
+                                ]?.getBoundingClientRect();
 
-  if (!rect) return;
+                              if (!rect) return;
 
-  const menuWidth = 208;
-  const menuHeight = 120;
+                              const menuWidth = 208;
+                              const menuHeight = 120;
 
-  let top = rect.bottom + 8;
-  let left = rect.right - menuWidth;
+                              let top = rect.bottom + 8;
+                              let left = rect.right - menuWidth;
 
-  if (window.innerHeight - rect.bottom < menuHeight) {
-    top = rect.top - menuHeight - 8;
-  }
+                              if (
+                                window.innerHeight - rect.bottom <
+                                menuHeight
+                              ) {
+                                top = rect.top - menuHeight - 8;
+                              }
 
-  if (left < 8) left = 8;
+                              if (left < 8) left = 8;
 
-  setMenuPosition({
-    top,
-    left,
-  });
-if (openMenu === user._id) {
-  setOpenMenu(null);
-  return;
-}
+                              setMenuPosition({
+                                top,
+                                left,
+                              });
+                              if (openMenu === user._id) {
+                                setOpenMenu(null);
+                                return;
+                              }
 
-setOpenMenu(user._id);
-}}
+                              setOpenMenu(user._id);
+                            }}
                             className="
                             menu-trigger
       flex
@@ -609,7 +614,6 @@ w-10
                           >
                             <MoreVertical size={16} />
                           </button>
-                          
                         </td>
                       </tr>
                     ))}
@@ -655,15 +659,15 @@ w-10
         </div>
       </div>
       {openMenu && (
-  <div
-    className="fixed floating-user-menu z-[9999]"
-    style={{
-      top: menuPosition.top,
-      left: menuPosition.left,
-    }}
-  >
-    <div
-      className="
+        <div
+          className="fixed floating-user-menu z-[9999]"
+          style={{
+            top: menuPosition.top,
+            left: menuPosition.left,
+          }}
+        >
+          <div
+            className="
         w-52
         rounded-2xl
         border
@@ -672,9 +676,9 @@ w-10
         p-2
         shadow-[0_20px_40px_rgba(15,23,42,0.18)]
       "
-    >
-      <button
-        className="
+          >
+            <button
+              className="
           mx-2
           my-1
           flex
@@ -688,21 +692,21 @@ w-10
           font-medium
           hover:bg-gray-100
         "
-        onClick={() => {
-          const user = users.find((u) => u._id === openMenu);
-          if (!user) return;
+              onClick={() => {
+                const user = users.find((u) => u._id === openMenu);
+                if (!user) return;
 
-          setSelectedUser(null);
-          setEditingUser(user);
-          setOpenMenu(null);
-        }}
-      >
-        <Pencil size={16} />
-        Edit User
-      </button>
+                setSelectedUser(null);
+                setEditingUser(user);
+                setOpenMenu(null);
+              }}
+            >
+              <Pencil size={16} />
+              Edit User
+            </button>
 
-      <button
-        className="
+            <button
+              className="
           mx-2
           mt-1
           mb-2
@@ -718,21 +722,21 @@ w-10
           text-red-600
           hover:bg-red-50
         "
-        onClick={() => {
-          const user = users.find((u) => u._id === openMenu);
-          if (!user) return;
+              onClick={() => {
+                const user = users.find((u) => u._id === openMenu);
+                if (!user) return;
 
-          setSelectedUser(null);
-          setDeletingUser(user);
-          setOpenMenu(null);
-        }}
-      >
-        <Trash2 size={16} />
-        Delete User
-      </button>
-    </div>
-  </div>
-)}
+                setSelectedUser(null);
+                setDeletingUser(user);
+                setOpenMenu(null);
+              }}
+            >
+              <Trash2 size={16} />
+              Delete User
+            </button>
+          </div>
+        </div>
+      )}
 
       <UserDetails
         user={selectedUser}
