@@ -51,7 +51,10 @@ const normalizeUser = (user) => {
 };
 const USERS_PER_PAGE = 10;
 const Users = () => {
-  const [menuDirection, setMenuDirection] = useState({});
+ const [menuPosition, setMenuPosition] = useState({
+  top: 0,
+  left: 0,
+});
   const menuButtonRefs = useRef({});
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -116,18 +119,22 @@ const Users = () => {
   const navigate = useNavigate();
   const location = useLocation();
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (openMenu && !event.target.closest(".user-menu")) {
-        setOpenMenu(null);
-      }
+  function handleClickOutside(event) {
+    if (
+      openMenu &&
+      !event.target.closest(".floating-user-menu") &&
+      !event.target.closest(".menu-trigger")
+    ) {
+      setOpenMenu(null);
     }
+  }
 
-    document.addEventListener("mousedown", handleClickOutside);
+  document.addEventListener("mousedown", handleClickOutside);
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [openMenu]);
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, [openMenu]);
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, roleFilter, sortBy]);
@@ -553,28 +560,39 @@ py-1.5
                             ref={(el) =>
                               (menuButtonRefs.current[user._id] = el)
                             }
-                            onClick={(e) => {
-                              e.stopPropagation();
+                          onClick={(e) => {
+  e.stopPropagation();
 
-                              const rect =
-                                menuButtonRefs.current[
-                                  user._id
-                                ]?.getBoundingClientRect();
-                              const menuHeight = 120;
-                              const spaceBelow =
-                                window.innerHeight - rect.bottom;
+  const rect =
+    menuButtonRefs.current[user._id]?.getBoundingClientRect();
 
-                              setMenuDirection((prev) => ({
-                                ...prev,
-                                [user._id]:
-                                  spaceBelow < menuHeight ? "up" : "down",
-                              }));
+  if (!rect) return;
 
-                              setOpenMenu(
-                                openMenu === user._id ? null : user._id,
-                              );
-                            }}
+  const menuWidth = 208;
+  const menuHeight = 120;
+
+  let top = rect.bottom + 8;
+  let left = rect.right - menuWidth;
+
+  if (window.innerHeight - rect.bottom < menuHeight) {
+    top = rect.top - menuHeight - 8;
+  }
+
+  if (left < 8) left = 8;
+
+  setMenuPosition({
+    top,
+    left,
+  });
+if (openMenu === user._id) {
+  setOpenMenu(null);
+  return;
+}
+
+setOpenMenu(user._id);
+}}
                             className="
+                            menu-trigger
       flex
       h-10
 w-10
@@ -591,95 +609,7 @@ w-10
                           >
                             <MoreVertical size={16} />
                           </button>
-
-                          {openMenu === user._id && (
-                            <div
-                              onClick={(e) => e.stopPropagation()}
-                              className={`
-  absolute
-user-menu
-  right-0 sm:right-4
-  z-[999]
-  w-52
-  rounded-2xl
-  border
-  border-[var(--university-border)]
-  bg-white
-  p-2
-  shadow-[0_20px_40px_rgba(15,23,42,0.18)]
- ${menuDirection[user._id] === "up" ? "bottom-full mb-2" : "top-full mt-2"}
-  `}
-                            >
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-
-                                  setSelectedUser(null);
-                                  setEditingUser(user);
-                                  setOpenMenu(null);
-                                }}
-                                className="
-    mx-2
-    my-1
-    flex
-    w-[calc(100%-16px)]
-    cursor-pointer
-    items-center
-    gap-3
-    rounded-xl
-    px-4
-    py-3
-    text-sm
-    font-medium
-    text-[var(--stratex-navy)]
-    transition-all
-    duration-200
-    md:hover:scale-[1.02]
-    md:hover:bg-[color-mix(in_srgb,var(--stratex-gold)_14%,white)]
-    md:hover:shadow-md
-  "
-                              >
-                                <Pencil size={16} />
-                                Edit User
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-
-                                  setSelectedUser(null);
-                                  setDeletingUser(user);
-                                  setOpenMenu(null);
-                                }}
-                                className="
-    mx-2
-    mb-2
-    mt-1
-    flex
-    w-[calc(100%-16px)]
-    cursor-pointer
-    items-center
-    gap-3
-    rounded-xl
-    px-4
-    py-3
-    text-sm
-    font-medium
-    text-red-600
-    transition-all
-    duration-200
-    md:hover:scale-[1.02]
-    md:hover:bg-red-50
-    md:hover:shadow-md
-  "
-                              >
-                                <Trash2 size={16} />
-                                Delete User
-                              </button>
-                            </div>
-                          )}
+                          
                         </td>
                       </tr>
                     ))}
@@ -724,6 +654,85 @@ user-menu
           </div>
         </div>
       </div>
+      {openMenu && (
+  <div
+    className="fixed floating-user-menu z-[9999]"
+    style={{
+      top: menuPosition.top,
+      left: menuPosition.left,
+    }}
+  >
+    <div
+      className="
+        w-52
+        rounded-2xl
+        border
+        border-[var(--university-border)]
+        bg-white
+        p-2
+        shadow-[0_20px_40px_rgba(15,23,42,0.18)]
+      "
+    >
+      <button
+        className="
+          mx-2
+          my-1
+          flex
+          w-[calc(100%-16px)]
+          items-center
+          gap-3
+          rounded-xl
+          px-4
+          py-3
+          text-sm
+          font-medium
+          hover:bg-gray-100
+        "
+        onClick={() => {
+          const user = users.find((u) => u._id === openMenu);
+          if (!user) return;
+
+          setSelectedUser(null);
+          setEditingUser(user);
+          setOpenMenu(null);
+        }}
+      >
+        <Pencil size={16} />
+        Edit User
+      </button>
+
+      <button
+        className="
+          mx-2
+          mt-1
+          mb-2
+          flex
+          w-[calc(100%-16px)]
+          items-center
+          gap-3
+          rounded-xl
+          px-4
+          py-3
+          text-sm
+          font-medium
+          text-red-600
+          hover:bg-red-50
+        "
+        onClick={() => {
+          const user = users.find((u) => u._id === openMenu);
+          if (!user) return;
+
+          setSelectedUser(null);
+          setDeletingUser(user);
+          setOpenMenu(null);
+        }}
+      >
+        <Trash2 size={16} />
+        Delete User
+      </button>
+    </div>
+  </div>
+)}
 
       <UserDetails
         user={selectedUser}
