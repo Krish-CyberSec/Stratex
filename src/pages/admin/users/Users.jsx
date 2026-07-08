@@ -3,7 +3,7 @@ import {
   updateUser,
   deleteUser,
 } from "../../../services/userService";
-import { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import UserDetails from "./components/UserDetails";
 import EditUserModal from "./components/EditUserModal";
 import DeleteUserModal from "./components/DeleteUserModal";
@@ -50,6 +50,9 @@ const normalizeUser = (user) => {
   };
 };
 const USERS_PER_PAGE = 10;
+const getErrorMessage = (error, fallback) =>
+  error?.response?.data?.message || error?.message || fallback;
+
 const Users = () => {
   const [menuPosition, setMenuPosition] = useState({
     top: 0,
@@ -71,19 +74,27 @@ const Users = () => {
     total: 0,
     totalPages: 1,
   });
+  const [stats, setStats] = useState({
+    active: 0,
+    faculty: 0,
+  });
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError("");
 
     try {
-      const response = await getUsers({
-        page: currentPage,
-        limit: USERS_PER_PAGE,
-        search: searchTerm.trim() || undefined,
-        role: roleFilter === "all" ? undefined : roleFilter,
-        sortBy: sortBy === "name" ? "firstName" : "createdAt",
-        order: sortBy === "name" ? "asc" : "desc",
-      });
+      const [response, activeResponse, facultyResponse] = await Promise.all([
+        getUsers({
+          page: currentPage,
+          limit: USERS_PER_PAGE,
+          search: searchTerm.trim() || undefined,
+          role: roleFilter === "all" ? undefined : roleFilter,
+          sortBy: sortBy === "name" ? "firstName" : "createdAt",
+          order: sortBy === "name" ? "asc" : "desc",
+        }),
+        getUsers({ page: 1, limit: 1, status: "active" }),
+        getUsers({ page: 1, limit: 1, role: "faculty" }),
+      ]);
 
       const backendUsers = response.data?.data || [];
       const backendPagination = response.data?.pagination;
@@ -93,8 +104,12 @@ const Users = () => {
         const { page, ...rest } = backendPagination;
         setPagination(rest);
       }
+      setStats({
+        active: activeResponse.data?.pagination?.total ?? 0,
+        faculty: facultyResponse.data?.pagination?.total ?? 0,
+      });
     } catch (err) {
-      setError(err.response?.data?.message || "Unable to load users");
+      setError(getErrorMessage(err, "Unable to load users"));
     } finally {
       setLoading(false);
     }
@@ -102,16 +117,6 @@ const Users = () => {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
-  const activeUsers = useMemo(
-    () => users.filter((user) => user.status === "active").length,
-    [users],
-  );
-
-  const facultyUsers = useMemo(
-    () => users.filter((user) => user.role === "faculty").length,
-    [users],
-  );
-
   const [openMenu, setOpenMenu] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
@@ -157,10 +162,11 @@ const Users = () => {
     return () => clearTimeout(timer);
   }, [error]);
   useEffect(() => {
-    const newUser = location.state?.newUser;
+    const message = location.state?.message;
 
-    if (!newUser) return;
+    if (!message) return;
 
+    setSuccess(message);
     fetchUsers();
     navigate(location.pathname, { replace: true });
   }, [location.state, location.pathname, navigate, fetchUsers]);
@@ -189,8 +195,9 @@ const Users = () => {
       setSuccess("User updated successfully");
     } catch (err) {
       setSuccess("");
-      setError(err.response?.data?.message || "Unable to update user");
-      throw err;
+      const message = getErrorMessage(err, "Unable to update user");
+      setError(message);
+      throw new Error(message, { cause: err });
     } finally {
       setActionLoading(false);
     }
@@ -215,7 +222,9 @@ const Users = () => {
       setSuccess("User deactivated successfully");
     } catch (err) {
       setSuccess("");
-      setError(err.response?.data?.message || "Unable to delete user");
+      const message = getErrorMessage(err, "Unable to delete user");
+      setError(message);
+      throw new Error(message, { cause: err });
     } finally {
       setActionLoading(false);
     }
@@ -279,7 +288,7 @@ const Users = () => {
 
           <DashboardStatCard
             title="Active Users"
-            value={activeUsers}
+            value={stats.active}
             icon={
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100 text-green-600">
                 <UserCheck size={18} />
@@ -289,7 +298,7 @@ const Users = () => {
 
           <DashboardStatCard
             title="Faculty Members"
-            value={facultyUsers}
+            value={stats.faculty}
             icon={
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
                 <GraduationCap size={18} />

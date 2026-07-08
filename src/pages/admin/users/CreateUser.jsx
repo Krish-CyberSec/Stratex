@@ -1,25 +1,92 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { createUser } from "../../../services/userService";
+import { getSchools } from "../../../services/schoolService";
+import { useAuth } from "../../../context/AuthContext";
+
+const getErrorMessage = (error, fallback) =>
+  error?.response?.data?.message || error?.message || fallback;
+
+const rolesThatNeedAssignments = ["student", "faculty", "coordinator"];
 
 const CreateUser = () => {
   const [error, setError] = useState("");
+  const [schoolsError, setSchoolsError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [schoolsLoading, setSchoolsLoading] = useState(false);
+  const [schools, setSchools] = useState([]);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     personalEmail: "",
-    school: "",
-    roles: "",
+    universityEmail: "",
+    institutionId: "",
+    schoolId: "",
+    role: "",
     status: "active",
   });
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canViewUsers = user?.roles?.includes("superAdmin");
+  const backPath = canViewUsers ? "/dashboard/users" : "/dashboard";
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSchools = async () => {
+      setSchoolsLoading(true);
+      setSchoolsError("");
+
+      try {
+        const response = await getSchools({
+          page: 1,
+          limit: 100,
+          status: "active",
+          sortBy: "name",
+          order: "asc",
+        });
+
+        if (isMounted) {
+          setSchools(response.data?.data || []);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setSchoolsError(getErrorMessage(err, "Unable to load schools"));
+        }
+      } finally {
+        if (isMounted) {
+          setSchoolsLoading(false);
+        }
+      }
+    };
+
+    loadSchools();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const selectedRoleNeedsAssignments = useMemo(
+    () => rolesThatNeedAssignments.includes(formData.role),
+    [formData.role],
+  );
+  const selectedRoleNeedsSchool = formData.role && formData.role !== "superAdmin";
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
     setFormData((prev) => ({
       ...prev,
-      [name]: ["personalEmail", "roles", "status"].includes(name)
+      [name]: [
+        "personalEmail",
+        "universityEmail",
+        "institutionId",
+        "schoolId",
+        "role",
+        "status",
+      ].includes(name)
         ? value
         : value.replace(/^\s+/, ""),
     }));
@@ -28,7 +95,7 @@ const CreateUser = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
 
@@ -54,16 +121,38 @@ const CreateUser = () => {
       return;
     }
 
-    if (!formData.school.trim()) {
-      setError("School is required.");
-      document.getElementById("school")?.focus();
+    if (selectedRoleNeedsSchool && !formData.universityEmail.trim()) {
+      setError("University email is required.");
+      document.getElementById("universityEmail")?.focus();
       setIsSubmitting(false);
       return;
     }
 
-    if (!formData.roles) {
+    if (selectedRoleNeedsSchool && !formData.institutionId.trim()) {
+      setError("Institution ID is required.");
+      document.getElementById("institutionId")?.focus();
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (selectedRoleNeedsSchool && !formData.schoolId) {
+      setError("School is required.");
+      document.getElementById("schoolId")?.focus();
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!formData.role) {
       setError("Please select a role.");
-      document.getElementById("roles")?.focus();
+      document.getElementById("role")?.focus();
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (selectedRoleNeedsAssignments) {
+      setError(
+        "Student, faculty, and coordinator users need academic assignments. Please create this role from the school/program assignment flow.",
+      );
       setIsSubmitting(false);
       return;
     }
@@ -76,25 +165,48 @@ const CreateUser = () => {
       return;
     }
 
+    if (
+      formData.universityEmail.trim() &&
+      !emailRegex.test(formData.universityEmail.trim())
+    ) {
+      setError("Please enter a valid university email address.");
+      document.getElementById("universityEmail")?.focus();
+      setIsSubmitting(false);
+      return;
+    }
+
     const firstName = formData.firstName.trim().replace(/\s+/g, " ");
     const lastName = formData.lastName.trim().replace(/\s+/g, " ");
-    const email = formData.personalEmail.trim().toLowerCase();
-    const school = formData.school.trim().replace(/\s+/g, " ");
-    const newUser = {
-      _id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
+    const roles = [formData.role];
+
+    const payload = {
       firstName,
       lastName,
-      email,
-      school,
-      role: formData.roles,
+      personalEmail: formData.personalEmail.trim().toLowerCase(),
+      roles,
       status: formData.status,
     };
 
-    navigate("/dashboard/users", {
-      state: {
-        newUser,
-      },
-    });
+    if (formData.universityEmail.trim() || formData.institutionId.trim()) {
+      payload.universityAccount = {
+        universityEmail: formData.universityEmail.trim().toLowerCase(),
+        institutionId: formData.institutionId.trim(),
+      };
+    }
+
+    if (formData.schoolId) {
+      payload.schoolId = formData.schoolId;
+    }
+
+    try {
+      await createUser(payload);
+      navigate(backPath, {
+        state: canViewUsers ? { message: "User created successfully" } : undefined,
+      });
+    } catch (err) {
+      setError(getErrorMessage(err, "Unable to create user"));
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -148,7 +260,7 @@ uppercase
           </div>
           <button
             type="button"
-            onClick={() => navigate("/dashboard/users")}
+            onClick={() => navigate(backPath)}
             className="
 inline-flex
 w-full
@@ -214,13 +326,18 @@ shadow-[0_8px_30px_rgba(15,23,42,0.04)]
               },
               {
                 name: "personalEmail",
-                label: "Email Address",
-                placeholder: "Enter email address",
+                label: "Personal Email",
+                placeholder: "Enter personal email",
               },
               {
-                name: "school",
-                label: "School",
-                placeholder: "Enter school name",
+                name: "universityEmail",
+                label: "University Email",
+                placeholder: "Enter university email",
+              },
+              {
+                name: "institutionId",
+                label: "Institution ID",
+                placeholder: "Enter institution ID",
               },
             ].map((field) => (
               <div key={field.name}>
@@ -236,18 +353,20 @@ text-[var(--university-muted)]"
                 </label>
 
                 <input
-                  type={field.name === "personalEmail" ? "email" : "text"}
+                  type={
+                    ["personalEmail", "universityEmail"].includes(field.name)
+                      ? "email"
+                      : "text"
+                  }
                   name={field.name}
                   value={formData[field.name]}
                   id={field.name}
                   onChange={handleChange}
                   placeholder={field.placeholder}
                   maxLength={
-                    field.name === "personalEmail"
+                    ["personalEmail", "universityEmail"].includes(field.name)
                       ? 254
-                      : field.name === "school"
-                        ? 100
-                        : 50
+                      : 50
                   }
                   className="
   h-12
@@ -275,7 +394,62 @@ text-[var(--university-muted)]"
 
             <div>
               <label
-                htmlFor="roles"
+                htmlFor="schoolId"
+                className="mb-2 block text-[11px]
+font-semibold
+tracking-[0.15em]
+uppercase
+text-[var(--university-muted)]"
+              >
+                School
+              </label>
+              <select
+                name="schoolId"
+                id="schoolId"
+                value={formData.schoolId}
+                onChange={handleChange}
+                disabled={schoolsLoading}
+                className="
+  h-12 
+  w-full
+  rounded-xl
+  border
+  border-[var(--university-border)]
+  bg-white
+  px-4
+  text-sm
+  font-medium
+  text-[var(--stratex-navy)]
+  shadow-sm
+  transition-all
+  duration-200
+  hover:border-[var(--university-blue)]
+  focus:border-[var(--university-blue)]
+  focus:ring-4
+  focus:ring-[color-mix(in_srgb,var(--university-blue)_10%,white)]
+  disabled:cursor-not-allowed
+  disabled:opacity-70
+"
+              >
+                <option value="">
+                  {schoolsLoading ? "Loading schools..." : "Select school"}
+                </option>
+                {schools.map((school) => (
+                  <option key={school._id} value={school._id}>
+                    {school.name}
+                  </option>
+                ))}
+              </select>
+              {schoolsError && (
+                <p className="mt-2 text-xs font-medium text-[var(--error)]">
+                  {schoolsError}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="role"
                 className="mb-2 block text-[11px]
 font-semibold
 tracking-[0.15em]
@@ -285,9 +459,9 @@ text-[var(--university-muted)]"
                 Role
               </label>
               <select
-                name="roles"
-                id="roles"
-                value={formData.roles}
+                name="role"
+                id="role"
+                value={formData.role}
                 onChange={handleChange}
                 className="
   h-12 
@@ -317,6 +491,12 @@ text-[var(--university-muted)]"
                 <option value="student">Student</option>
                 <option value="examCell">Exam Cell</option>
               </select>
+              {selectedRoleNeedsAssignments && (
+                <p className="mt-2 text-xs font-medium text-[var(--university-muted)]">
+                  This role requires academic assignment data before it can be
+                  created.
+                </p>
+              )}
             </div>
 
             <div>
@@ -378,7 +558,7 @@ focus:ring-[color-mix(in_srgb,var(--university-blue)_16%,white)]
             >
               <button
                 type="button"
-                onClick={() => navigate("/dashboard/users")}
+                onClick={() => navigate(backPath)}
                 className="
 w-full
 sm:w-auto

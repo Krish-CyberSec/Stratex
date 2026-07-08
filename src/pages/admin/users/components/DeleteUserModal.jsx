@@ -1,14 +1,14 @@
 import { Trash2, X } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 
 const DeleteUserModal = ({ user, onClose, onDelete }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (loading) return;
     onClose?.();
-  };
+  }, [loading, onClose]);
 
   const handleDelete = async () => {
     if (loading || !onDelete || !user) return;
@@ -49,7 +49,7 @@ const DeleteUserModal = ({ user, onClose, onDelete }) => {
     document.addEventListener("keydown", handleKeyDown);
 
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [loading, onClose]);
+  }, [loading, handleClose]);
 
   useEffect(() => {
     if (user) {

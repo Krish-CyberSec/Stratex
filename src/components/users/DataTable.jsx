@@ -77,7 +77,7 @@ const Datatable = ({
           </span>
 
           <span className="hidden sm:inline">
-            Page {currentPage} of {totalPages}
+            {pageInfoText || `Page ${currentPage} of ${totalPages}`}
           </span>
         </p>
       )}
@@ -118,7 +118,7 @@ const Datatable = ({
             disabled:shadow-none
           "
         >
-          ←
+          &lt;
         </button>
 
         {pages.map((page, index) => {
@@ -207,7 +207,7 @@ const Datatable = ({
             disabled:shadow-none
           "
         >
-          →
+          &gt;
         </button>
       </div>
     </div>
