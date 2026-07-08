@@ -10,7 +10,6 @@ import DeleteUserModal from "./components/DeleteUserModal";
 import { useLocation, useNavigate } from "react-router-dom";
 import Datatable from "../../../components/users/DataTable";
 import SearchBar from "../../../components/users/SearchBar";
-import DashboardStatCard from "../../../components/common/DashboardStatCard";
 import {
   Pencil,
   Plus,
@@ -52,6 +51,15 @@ const normalizeUser = (user) => {
 const USERS_PER_PAGE = 10;
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.message || fallback;
+
+const userStatToneClass = {
+  blue: "bg-[color-mix(in_srgb,var(--stratex-blue)_10%,white)] text-[var(--stratex-blue)]",
+  green:
+    "bg-[color-mix(in_srgb,var(--success)_10%,white)] text-[var(--success)]",
+  amber: "bg-amber-50 text-amber-600",
+  action:
+    "bg-[color-mix(in_srgb,var(--stratex-blue)_10%,white)] text-[var(--stratex-blue)]",
+};
 
 const Users = () => {
   const [menuPosition, setMenuPosition] = useState({
@@ -101,8 +109,11 @@ const Users = () => {
 
       setUsers(backendUsers.map(normalizeUser));
       if (backendPagination) {
-        const { page, ...rest } = backendPagination;
-        setPagination(rest);
+        setPagination({
+          limit: backendPagination.limit || USERS_PER_PAGE,
+          total: backendPagination.total || 0,
+          totalPages: backendPagination.totalPages || 1,
+        });
       }
       setStats({
         active: activeResponse.data?.pagination?.total ?? 0,
@@ -177,9 +188,9 @@ const Users = () => {
 
     try {
       const payload = {
-        firstName: updatedUser.firstName,
-        lastName: updatedUser.lastName,
-        personalEmail: updatedUser.personalEmail,
+        firstName: updatedUser.firstName?.trim(),
+        lastName: updatedUser.lastName?.trim(),
+        personalEmail: updatedUser.personalEmail?.trim() || undefined,
         status: updatedUser.status,
       };
 
@@ -232,221 +243,140 @@ const Users = () => {
 
   const totalPages = pagination.totalPages || 1;
 
-  const startIndex = (currentPage - 1) * pagination.limit;
-
   return (
-    <div className="min-h-screen bg-[var(--background)] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+    <div className="min-h-[calc(100vh-4rem)] bg-[linear-gradient(135deg,#ffffff_0%,var(--background)_48%,#eef5ff_100%)] px-3 py-5 sm:px-5 lg:px-7">
+      <div className="mx-auto max-w-7xl space-y-5">
+        <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
-            <div
-              className="
-      inline-flex
-      items-center
-      rounded-full
-      bg-[color-mix(in_srgb,var(--university-blue)_10%,white)]
-      px-4
-      py-2
-      text-xs
-      font-semibold
-      uppercase
-      tracking-[0.15em]
-      text-[var(--university-blue)]
-    "
-            >
-              Administration
-            </div>
-
-            <h1 className="mt-3 text-3xl font-bold leading-none sm:text-4xl">
+            <h1 className="text-3xl font-bold leading-tight text-[var(--text-primary)] sm:text-4xl">
               Users
             </h1>
-
-            <p className="mt-2 max-w-2xl text-sm leading-6 sm:text-base">
+            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-[var(--text-secondary)]">
               Manage user profiles, roles, schools, and account access.
             </p>
           </div>
-        </header>
-        <div
-          className="
-  mt-6
-  grid
-  grid-cols-1
-  gap-4
-  sm:grid-cols-2
-  lg:grid-cols-4
-"
-        >
-          <DashboardStatCard
-            title="Total Users"
-            value={pagination.total}
-            icon={
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
-                <UsersIcon size={18} />
-              </div>
-            }
-          />
 
-          <DashboardStatCard
-            title="Active Users"
-            value={stats.active}
-            icon={
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100 text-green-600">
-                <UserCheck size={18} />
-              </div>
-            }
-          />
-
-          <DashboardStatCard
-            title="Faculty Members"
-            value={stats.faculty}
-            icon={
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-                <GraduationCap size={18} />
-              </div>
-            }
-          />
-
-          <DashboardStatCard
-            title="Quick Action"
-            value="+"
+          <button
+            type="button"
             onClick={() => navigate("/dashboard/users/create")}
-            className="
-    bg-[var(--university-blue)]
-    border-[var(--university-blue)]
-    cursor-pointer
-  "
-            titleClassName="text-white"
-            valueClassName="text-white"
-            actionClassName="
-    bg-white/10
-    border-white/20
-    text-white
-  "
-            footer={
-              <span className="text-white/80">Create a new user account</span>
-            }
-            icon={
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-white">
-                <Plus size={18} />
-              </div>
-            }
-          />
-        </div>
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--stratex-blue)] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[var(--stratex-blue-dark)]"
+          >
+            <Plus size={17} />
+            Add User
+          </button>
+        </header>
 
-        <div className="mt-6 overflow-hidden rounded-3xl border border-[var(--border-light)] bg-[var(--surface)] shadow-md">
-          <div className="flex items-center justify-between gap-3 border-b border-[var(--university-border)] bg-[linear-gradient(180deg,var(--university-surface),var(--university-surface-soft))] px-4 py-4 sm:px-5">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--university-blue)_12%,white)] text-[var(--university-blue-dark)]">
-                <UsersRound size={18} />
-              </div>
-
-              <div className="min-w-0">
-                <div>
-                  <h2 className="text-base font-semibold">All Users</h2>
-
-                  <p className="text-xs text-[var(--text-secondary)] mt-1">
-                    {pagination.total} users found
+        <section className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            {
+              title: "Total Users",
+              value: pagination.total,
+              hint: "registered accounts",
+              icon: UsersIcon,
+              tone: "blue",
+            },
+            {
+              title: "Active Users",
+              value: stats.active,
+              hint: "ready for access",
+              icon: UserCheck,
+              tone: "green",
+            },
+            {
+              title: "Faculty Members",
+              value: stats.faculty,
+              hint: "teaching accounts",
+              icon: GraduationCap,
+              tone: "amber",
+            },
+            {
+              title: "Create User",
+              value: "+",
+              hint: "add a new account",
+              icon: Plus,
+              tone: "action",
+              onClick: () => navigate("/dashboard/users/create"),
+            },
+          ].map((stat) => (
+            <button
+              key={stat.title}
+              type="button"
+              onClick={stat.onClick}
+              className={`min-h-32 rounded-2xl border border-[var(--border-light)] bg-white p-5 text-left shadow-sm transition ${
+                stat.onClick
+                  ? "hover:-translate-y-0.5 hover:border-[var(--stratex-blue)] hover:shadow-md"
+                  : "cursor-default"
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full ${userStatToneClass[stat.tone]}`}
+                >
+                  <stat.icon size={24} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-3xl font-bold leading-none text-[var(--university-ink)]">
+                    {stat.value}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[var(--university-ink)]">
+                    {stat.title}
                   </p>
                 </div>
               </div>
-            </div>
-          </div>
-          <div className="border-b border-[var(--border-light)] px-6 py-5">
-            <SearchBar
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              roleFilter={roleFilter}
-              setRoleFilter={setRoleFilter}
-              sortBy={sortBy}
-              setSortBy={setSortBy}
-            />
-          </div>
+              <p className="mt-4 pl-[4.5rem] text-xs font-medium text-[var(--university-muted)]">
+                {stat.hint}
+              </p>
+            </button>
+          ))}
+        </section>
+
+        <SearchBar
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          roleFilter={roleFilter}
+          setRoleFilter={setRoleFilter}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+        />
+
+        <section className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-white shadow-sm">
           {success && (
-            <div className="mx-5 mt-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+            <div className="mx-4 mt-4 rounded-xl border border-[color-mix(in_srgb,var(--success)_24%,white)] bg-[color-mix(in_srgb,var(--success)_10%,white)] px-4 py-3 text-sm font-semibold text-[var(--success)]">
               {success}
             </div>
           )}
           {error && !loading && (
-            <div className="mx-5 mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            <div className="mx-4 mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-[var(--error)]">
               {error}
             </div>
           )}
-          <div className="md:block overflow-x-auto ">
-            <div className="max-h-[600px] overflow-auto">
+          <div className="overflow-x-auto">
+            <div className="max-h-[640px] overflow-auto">
               <table className="w-full min-w-[900px] border-collapse text-left">
                 <thead>
-                  <tr
-                    className="
-  border-b
-  border-[var(--university-border)]
-  transition-all
-  duration-200
-  bg-[color-mix(in_srgb,var(--university-blue)_6%,white)]
-"
-                  >
+                  <tr className="border-b border-[var(--border-light)] bg-[var(--surface-soft)]">
                     <th
-                      className="
-    px-3 py-3 sm:px-5 sm:py-4
-    text-left
-   
-    uppercase
-    text-xs
-font-semibold
-tracking-[0.08em]
-text-[var(--text-muted)]
-  "
+                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-[var(--university-muted)] sm:px-5"
                     >
                       Name
                     </th>
                     <th
-                      className="
-    px-3 py-3 sm:px-5 sm:py-4
-    text-left
-    text-[11px]
-    font-bold
-    uppercase
-    tracking-[0.12em]
-    text-[var(--university-blue)]
-  "
+                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-[var(--university-muted)] sm:px-5"
                     >
                       Email
                     </th>
                     <th
-                      className="
-    px-3 py-3 sm:px-5 sm:py-4
-    text-left
-    text-[11px]
-    font-bold
-    uppercase
-    tracking-[0.12em]
-    text-[var(--university-blue)]
-  "
+                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-[var(--university-muted)] sm:px-5"
                     >
                       Role
                     </th>
                     <th
-                      className="
-    px-3 py-3 sm:px-5 sm:py-4
-    text-left
-    text-[11px]
-    font-bold
-    uppercase
-    tracking-[0.12em]
-    text-[var(--university-blue)]
-  "
+                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-[var(--university-muted)] sm:px-5"
                     >
                       Status
                     </th>
                     <th
-                      className="
-   px-3 py-3 sm:px-5 sm:py-4
-    text-left
-    text-[11px]
-    font-bold
-    uppercase
-    tracking-[0.12em]
-    text-[var(--university-blue)]
-  "
+                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-[var(--university-muted)] sm:px-5"
                     >
                       Actions
                     </th>
@@ -485,46 +415,26 @@ text-[var(--text-muted)]
                         className={`
     cursor-pointer
     relative
-    rounded-2xl
     ${openMenu === user._id ? "z-50" : "z-0"}
-    bg-white
-    shadow-sm
     duration-200
-    md:hover:-translate-y-[2px]
-    md:hover:shadow-lg
-    md:hover:bg-[color-mix(in_srgb,var(--university-blue)_3%,white)]
     border-b
 border-[var(--border-light)]
-bg-[var(--surface)]
+bg-white
 transition-colors
+md:hover:bg-[var(--surface-soft)]
                   `}
                       >
-                        <td className=" px-3 py-3 sm:px-5 sm:py-4">
+                        <td className="px-4 py-4 sm:px-5">
                           <div className="flex min-w-0 items-center gap-3">
                             <div
-                              className="
-    flex
-    h-9
-w-9
-sm:h-11
-sm:w-11
-    shrink-0
-    items-center
-    justify-center
-    rounded-full
-    bg-[var(--surface-soft)]
-    text-sm
-    font-bold
-    text-[var(--university-blue)]
-  "
+                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--stratex-blue)_10%,white)] text-sm font-bold text-[var(--stratex-blue)]"
                             >
                               {getInitials(user.firstName, user.lastName)}
                             </div>
 
                             <div className="min-w-0">
                               <p
-                                className="truncate text-base
-font-semibold text-[var(--university-ink)]"
+                                className="truncate text-sm font-bold text-[var(--university-ink)]"
                               >
                                 {user.firstName} {user.lastName}
                               </p>
@@ -534,37 +444,26 @@ font-semibold text-[var(--university-ink)]"
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-3 sm:px-5 sm:py-4 text-sm text-[var(--university-muted)]">
+                        <td className="px-4 py-4 text-sm font-medium text-[var(--university-muted)] sm:px-5">
                           {user.email}
                         </td>
-                        <td className="px-3 py-3 sm:px-5 sm:py-4 text-sm text-[var(--university-muted)]">
-                          <span
-                            className="
-    inline-flex
-    rounded-full
-    bg-[var(--surface-soft)]
-text-[var(--stratex-blue)]
-px-4
-py-1.5
-    text-xs
-    font-semibold
-  "
-                          >
+                        <td className="px-4 py-4 text-sm text-[var(--university-muted)] sm:px-5">
+                          <span className="inline-flex rounded-full bg-[color-mix(in_srgb,var(--stratex-blue)_9%,white)] px-3 py-1 text-xs font-bold text-[var(--stratex-blue)]">
                             {formatRole(user.role)}
                           </span>
                         </td>
-                        <td className="px-3 py-3 sm:px-5 sm:py-4">
+                        <td className="px-4 py-4 sm:px-5">
                           <span
-                            className={`inline-flex items-center rounded-full px-4 py-1 gap-1.5 text-xs font-semibold capitalize ${
+                            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold capitalize ${
                               user.status?.toLowerCase() === "active"
-                                ? " bg-green-50 text-green-700 ring-1 ring-green-200"
-                                : " bg-red-50 text-red-700 ring-1 ring-red-200"
+                                ? "bg-[color-mix(in_srgb,var(--success)_10%,white)] text-[var(--success)]"
+                                : "bg-[color-mix(in_srgb,var(--error)_10%,white)] text-[var(--error)]"
                             }`}
                           >
                             {user.status}
                           </span>
                         </td>
-                        <td className="relative px-4 py-4 overflow-visible">
+                        <td className="relative overflow-visible px-4 py-4 sm:px-5">
                           <button
                             ref={(el) =>
                               (menuButtonRefs.current[user._id] = el)
@@ -605,21 +504,7 @@ py-1.5
 
                               setOpenMenu(user._id);
                             }}
-                            className="
-                            menu-trigger
-      flex
-      h-10
-w-10
-      items-center
-      justify-center
-      rounded-xl
-      border
-      border-[var(--university-border)]
-      text-[var(--text-secondary)]
-      transition-all
-      md:hover:bg-[var(--university-surface-soft)]
-      md:hover:text-[var(--university-blue)]
-    "
+                            className="menu-trigger inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-light)] bg-white text-[var(--university-muted)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--university-ink)]"
                           >
                             <MoreVertical size={16} />
                           </button>
@@ -650,22 +535,18 @@ w-10
               </table>
             </div>
           </div>
-          <Datatable
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-t border-[var(--university-border)] px-5 py-4">
-            <p className="text-sm text-[var(--text-secondary)]">
-              {pagination.total === 0
-                ? "Showing 0 users"
-                : `Showing ${startIndex + 1} - ${Math.min(
-                    startIndex + users.length,
-                    pagination.total,
-                  )} of ${pagination.total} users`}
-            </p>
+          <div className="border-t border-[var(--border-light)] px-4 py-4">
+            <Datatable
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalItems={pagination.total}
+              pageSize={pagination.limit}
+              itemCount={users.length}
+              itemLabel="users"
+            />
           </div>
-        </div>
+        </section>
       </div>
       {openMenu && (
         <div

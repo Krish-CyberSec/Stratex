@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, UserPlus } from "lucide-react";
 import { createUser } from "../../../services/userService";
 import { getSchools } from "../../../services/schoolService";
 import { useAuth } from "../../../context/AuthContext";
@@ -9,6 +9,17 @@ const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.message || fallback;
 
 const rolesThatNeedAssignments = ["student", "faculty", "coordinator"];
+const allRoleOptions = [
+  { value: "superAdmin", label: "Super Admin" },
+  { value: "schoolAdmin", label: "School Admin" },
+  { value: "faculty", label: "Faculty" },
+  { value: "coordinator", label: "Coordinator" },
+  { value: "student", label: "Student" },
+  { value: "examCell", label: "Exam Cell" },
+];
+const schoolAdminRoleOptions = allRoleOptions.filter((role) =>
+  ["student", "faculty", "coordinator"].includes(role.value),
+);
 
 const CreateUser = () => {
   const [error, setError] = useState("");
@@ -30,6 +41,7 @@ const CreateUser = () => {
   const { user } = useAuth();
   const canViewUsers = user?.roles?.includes("superAdmin");
   const backPath = canViewUsers ? "/dashboard/users" : "/dashboard";
+  const roleOptions = canViewUsers ? allRoleOptions : schoolAdminRoleOptions;
 
   useEffect(() => {
     let isMounted = true;
@@ -177,7 +189,10 @@ const CreateUser = () => {
 
     const firstName = formData.firstName.trim().replace(/\s+/g, " ");
     const lastName = formData.lastName.trim().replace(/\s+/g, " ");
-    const roles = [formData.role];
+    const roles =
+      formData.role === "coordinator"
+        ? ["faculty", "coordinator"]
+        : [formData.role];
 
     const payload = {
       firstName,
@@ -205,113 +220,55 @@ const CreateUser = () => {
       });
     } catch (err) {
       setError(getErrorMessage(err, "Unable to create user"));
+    } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[var(--background)] px-6 py-10 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1150px]">
-        <header className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="min-w-0">
-            <div
-              className="
-      inline-flex
-      items-center
-      rounded-full
-bg-[#EEF5FC]
-      px-4
-      py-2
-     text-[11px]
-font-bold
-tracking-[0.15em]
-uppercase
-      text-[var(--university-blue)]
-    "
-            >
-              Administration
-            </div>
+    <div className="min-h-[calc(100vh-4rem)] bg-[linear-gradient(135deg,#ffffff_0%,var(--background)_48%,#eef5ff_100%)] px-3 py-5 sm:px-5 lg:px-7">
+      <div className="mx-auto max-w-4xl space-y-5">
+        <button
+          type="button"
+          onClick={() => navigate(backPath)}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--border-light)] bg-white px-3 text-sm font-bold text-[var(--university-ink)] shadow-sm transition hover:bg-[var(--surface-soft)]"
+        >
+          <ArrowLeft size={16} />
+          Back to Users
+        </button>
 
-            <h1
-              className="
-    mt-5
-    text-3xl
-    font-bold
-    leading-none
-    text-[var(--stratex-navy)]
-    sm:text-4xl
-  "
-            >
+        <header className="rounded-2xl border border-[var(--border-light)] bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--stratex-blue)_10%,white)] text-[var(--stratex-blue)]">
+              <UserPlus size={24} />
+            </div>
+          <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--university-muted)]">
+                Administration
+              </p>
+            <h1 className="mt-1 text-3xl font-bold leading-tight text-[var(--text-primary)] sm:text-4xl">
               Create User
             </h1>
-
-            <p
-              className="
-    mt-2
-    max-w-2xl
-    text-base
-    leading-7
-    text-[var(--text-secondary)]
-    sm:mt-3
-  "
-            >
+            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-[var(--text-secondary)]">
               Add a new user and assign roles, permissions, and account status.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate(backPath)}
-            className="
-inline-flex
-w-full
-items-center
-justify-center
-gap-2
-rounded-xl
-border
-border-[var(--university-border)]
-bg-white
-px-4
-py-2.5
-text-sm
-font-semibold
-text-[var(--university-blue-dark)]
-shadow-sm
-transition
-hover:bg-[var(--university-surface-soft)]
-sm:w-auto
-"
-          >
-            <ArrowLeft size={17} />
-            Back to Users
-          </button>
+          </div>
         </header>
 
-        <div
-          className="
-    overflow-hidden
-    sm:rounded-[28px]
-    rounded-[28px]
-border
-border-[#E8EEF5]
-bg-white
-shadow-[0_8px_30px_rgba(15,23,42,0.04)]
-    
-  "
-        >
-          <div className="border-b border-[var(--university-border)] bg-[linear-gradient(180deg,var(--university-surface),var(--university-surface-soft))] px-4 py-4 sm:px-6">
-            <h2 className="text-lg font-bold text-[var(--stratex-navy)]">
-              {" "}
+        <section className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-white shadow-sm">
+          <div className="border-b border-[var(--border-light)] bg-[var(--surface-soft)] px-4 py-4 sm:px-6">
+            <h2 className="text-base font-bold text-[var(--university-ink)]">
               User Information
             </h2>
-            <p className="mt-0.5 text-xs font-medium text-[var(--university-muted)]">
+            <p className="mt-1 text-xs font-medium text-[var(--university-muted)]">
               Enter the profile details for this account
             </p>
           </div>
           <form
             noValidate
             onSubmit={handleSubmit}
-            className="grid gap-x-8 gap-y-7 p-8 lg:grid-cols-2"
+            className="grid gap-x-5 gap-y-5 p-4 sm:p-6 lg:grid-cols-2"
           >
             {[
               {
@@ -343,11 +300,7 @@ shadow-[0_8px_30px_rgba(15,23,42,0.04)]
               <div key={field.name}>
                 <label
                   htmlFor={field.name}
-                  className="mb-2 block text-[11px]
-font-semibold
-tracking-[0.15em]
-uppercase
-text-[var(--university-muted)]"
+                  className="mb-2 block text-xs font-bold uppercase tracking-[0.08em] text-[var(--university-muted)]"
                 >
                   {field.label}
                 </label>
@@ -368,26 +321,7 @@ text-[var(--university-muted)]"
                       ? 254
                       : 50
                   }
-                  className="
-  h-12
-  w-full
-  rounded-xl
-  border
-  border-[var(--university-border)]
-  bg-white
-  px-4
-  text-sm
-  font-medium
-  text-[var(--stratex-navy)]
-  shadow-sm
-  outline-none
-  transition-all
-  duration-200
-  hover:border-[var(--university-blue)]
-  focus:border-[var(--university-blue)]
-  focus:ring-4
-  focus:ring-[color-mix(in_srgb,var(--university-blue)_10%,white)]
-"
+                  className="h-11 w-full rounded-xl border border-[var(--border-light)] bg-white px-3 text-sm font-medium text-[var(--university-ink)] outline-none transition placeholder:text-[var(--university-muted)] focus:border-[var(--university-blue)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--university-blue)_14%,white)]"
                 />
               </div>
             ))}
@@ -395,11 +329,7 @@ text-[var(--university-muted)]"
             <div>
               <label
                 htmlFor="schoolId"
-                className="mb-2 block text-[11px]
-font-semibold
-tracking-[0.15em]
-uppercase
-text-[var(--university-muted)]"
+                className="mb-2 block text-xs font-bold uppercase tracking-[0.08em] text-[var(--university-muted)]"
               >
                 School
               </label>
@@ -409,27 +339,7 @@ text-[var(--university-muted)]"
                 value={formData.schoolId}
                 onChange={handleChange}
                 disabled={schoolsLoading}
-                className="
-  h-12 
-  w-full
-  rounded-xl
-  border
-  border-[var(--university-border)]
-  bg-white
-  px-4
-  text-sm
-  font-medium
-  text-[var(--stratex-navy)]
-  shadow-sm
-  transition-all
-  duration-200
-  hover:border-[var(--university-blue)]
-  focus:border-[var(--university-blue)]
-  focus:ring-4
-  focus:ring-[color-mix(in_srgb,var(--university-blue)_10%,white)]
-  disabled:cursor-not-allowed
-  disabled:opacity-70
-"
+                className="h-11 w-full rounded-xl border border-[var(--border-light)] bg-white px-3 text-sm font-semibold text-[var(--university-ink)] outline-none transition focus:border-[var(--university-blue)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--university-blue)_14%,white)] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <option value="">
                   {schoolsLoading ? "Loading schools..." : "Select school"}
@@ -450,11 +360,7 @@ text-[var(--university-muted)]"
             <div>
               <label
                 htmlFor="role"
-                className="mb-2 block text-[11px]
-font-semibold
-tracking-[0.15em]
-uppercase
-text-[var(--university-muted)]"
+                className="mb-2 block text-xs font-bold uppercase tracking-[0.08em] text-[var(--university-muted)]"
               >
                 Role
               </label>
@@ -463,36 +369,17 @@ text-[var(--university-muted)]"
                 id="role"
                 value={formData.role}
                 onChange={handleChange}
-                className="
-  h-12 
-  w-full
-  rounded-xl
-  border
-  border-[var(--university-border)]
-  bg-white
-  px-4
-  text-sm
-  font-medium
-  text-[var(--stratex-navy)]
-  shadow-sm
-  transition-all
-  duration-200
-  hover:border-[var(--university-blue)]
-  focus:border-[var(--university-blue)]
-  focus:ring-4
-  focus:ring-[color-mix(in_srgb,var(--university-blue)_10%,white)]
-"
+                className="h-11 w-full rounded-xl border border-[var(--border-light)] bg-white px-3 text-sm font-semibold text-[var(--university-ink)] outline-none transition focus:border-[var(--university-blue)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--university-blue)_14%,white)]"
               >
                 <option value="">Select role</option>
-                <option value="superAdmin">Super Admin</option>
-                <option value="schoolAdmin">School Admin</option>
-                <option value="faculty">Faculty</option>
-                <option value="coordinator">Coordinator</option>
-                <option value="student">Student</option>
-                <option value="examCell">Exam Cell</option>
+                {roleOptions.map((role) => (
+                  <option key={role.value} value={role.value}>
+                    {role.label}
+                  </option>
+                ))}
               </select>
               {selectedRoleNeedsAssignments && (
-                <p className="mt-2 text-xs font-medium text-[var(--university-muted)]">
+                <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
                   This role requires academic assignment data before it can be
                   created.
                 </p>
@@ -502,11 +389,7 @@ text-[var(--university-muted)]"
             <div>
               <label
                 htmlFor="status"
-                className="mb-2 block text-[11px]
-font-semibold
-tracking-[0.15em]
-uppercase
-text-[var(--university-muted)]"
+                className="mb-2 block text-xs font-bold uppercase tracking-[0.08em] text-[var(--university-muted)]"
               >
                 Status
               </label>
@@ -515,22 +398,7 @@ text-[var(--university-muted)]"
                 id="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="
-h-12
-w-full
-rounded-xl
-border
-border-[var(--university-border)]
-bg-white
-px-4
-text-sm
-text-[var(--university-ink)]
-outline-none
-transition
-focus:border-[var(--university-blue)]
-focus:ring-4
-focus:ring-[color-mix(in_srgb,var(--university-blue)_16%,white)]
-"
+                className="h-11 w-full rounded-xl border border-[var(--border-light)] bg-white px-3 text-sm font-semibold text-[var(--university-ink)] outline-none transition focus:border-[var(--university-blue)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--university-blue)_14%,white)]"
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -538,46 +406,16 @@ focus:ring-[color-mix(in_srgb,var(--university-blue)_16%,white)]
             </div>
 
             {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-[var(--error)] md:col-span-2">
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-[var(--error)] md:col-span-2">
                 {error}
               </div>
             )}
 
-            <div
-              className="
-    flex
-    flex-col
-    gap-3
-    border-t
-    border-[var(--university-border)]
-    pt-5
-    md:col-span-2
-    sm:flex-row
-    sm:justify-end
-  "
-            >
+            <div className="flex flex-col gap-3 border-t border-[var(--border-light)] pt-5 md:col-span-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={() => navigate(backPath)}
-                className="
-w-full
-sm:w-auto
-rounded-xl
-border
-bg-[#FBFCFD]
-border-[#E4EAF2]
-px-6
-py-3
-text-sm
-font-semibold
-text-[var(--stratex-navy)]
-shadow-sm
-transition-all
-duration-200
-hover:-translate-y-0.5
-hover:shadow-md
-cursor-pointer
-"
+                className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-[var(--border-light)] bg-white px-4 text-sm font-bold text-[var(--university-ink)] transition hover:bg-[var(--surface-soft)] sm:w-auto"
               >
                 Cancel
               </button>
@@ -585,37 +423,13 @@ cursor-pointer
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="
-inline-flex
-w-full
-sm:w-auto
-items-center
-justify-center
-gap-2
-rounded-xl
-bg-[var(--university-blue)]
-px-6
-py-3
-text-sm
-font-semibold
-text-white
-shadow-md
-hover:shadow-lg
-transition-all
-duration-200
-hover:-translate-y-0.5
-disabled:opacity-60
-disabled:cursor-not-allowed
-disabled:hover:translate-y-0
-cursor-pointer
-"
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--stratex-blue)] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[var(--stratex-blue-dark)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
-                {" "}
                 {isSubmitting ? "Creating..." : "Create User"}
               </button>
             </div>
           </form>
-        </div>
+        </section>
       </div>
     </div>
   );
