@@ -1,4 +1,4 @@
-import { BadgeCheck, Clock, IdCard, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 import {
   formatDate,
   getInstitutionId,
@@ -11,24 +11,21 @@ import ProfileSectionCard from "./ProfileSectionCard";
 const AccountOverviewCard = ({ user }) => {
   const role = getPrimaryRole(user);
   const rows = [
-    { label: "Role", value: getRoleLabel(role), icon: Shield, tone: "blue" },
-    { label: "Institution ID", value: getInstitutionId(user), icon: IdCard, tone: "blue" },
-    { label: "Access Level", value: roleScopes[role] || "Standard access", icon: BadgeCheck, tone: "green" },
-    { label: "Joined", value: formatDate(user?.createdAt), icon: Clock, tone: "slate" },
+    { label: "Role", value: getRoleLabel(role) },
+    { label: "Employee ID", value: getInstitutionId(user) },
+    { label: "Access Level", value: roleScopes[role] || "Standard access" },
+    { label: "Joined", value: formatDate(user?.createdAt) },
   ];
 
   return (
     <ProfileSectionCard icon={Shield} title="Account Overview">
       <div className="space-y-3">
         {rows.map((row) => (
-          <div key={row.label} className="flex items-center justify-between gap-3 rounded-xl bg-[var(--surface-soft)] px-3 py-3">
+          <div key={row.label} className="flex items-center justify-between gap-3 border-b border-[var(--border-light)] py-3 last:border-b-0">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[var(--stratex-blue)]">
-                <row.icon size={15} />
-              </span>
               <span className="text-xs font-bold text-[var(--university-muted)]">{row.label}</span>
             </div>
-            <span className="min-w-0 break-words text-right text-xs font-bold text-[var(--university-ink)]">
+            <span className="min-w-0 break-words rounded-full bg-[color-mix(in_srgb,var(--stratex-blue)_8%,white)] px-2.5 py-1 text-right text-xs font-bold text-[var(--stratex-blue)]">
               {row.value}
             </span>
           </div>

@@ -16,32 +16,24 @@ const getRoleSpecificFields = (user) => {
   const assignment = getAssignmentSummary(user);
 
   if (role === "superAdmin") {
-    return [
-      { label: "Access Scope", value: roleScopes[role] },
-      { label: "Department", value: "Administration" },
-    ];
+    return { designation: roleScopes[role], department: "Administration" };
   }
 
   if (role === "examCell") {
-    return [
-      { label: "Access Scope", value: roleScopes[role] },
-      { label: "Department", value: "Examination Cell" },
-    ];
+    return { designation: roleScopes[role], department: "Examination Cell" };
   }
 
   if (role === "student") {
-    return [
-      { label: "School", value: getSchoolName(user) },
-      { label: "Program", value: assignment.program },
-      { label: "Specialization", value: assignment.specialization },
-      { label: "Semester", value: assignment.semester },
-    ];
+    return {
+      designation: assignment.semester !== "Not assigned" ? `Semester ${assignment.semester}` : "Student",
+      department: `${getSchoolName(user)}${assignment.program !== "Not assigned" ? ` / ${assignment.program}` : ""}`,
+    };
   }
 
-  return [
-    { label: "School", value: getSchoolName(user) },
-    { label: "Program", value: assignment.program },
-  ];
+  return {
+    designation: getRoleLabel(role),
+    department: `${getSchoolName(user)}${assignment.program !== "Not assigned" ? ` / ${assignment.program}` : ""}`,
+  };
 };
 
 const ProfileDetailsForm = ({ form, onChange, onSubmit, saving, status, user }) => {
@@ -55,38 +47,24 @@ const ProfileDetailsForm = ({ form, onChange, onSubmit, saving, status, user }) 
     >
       <form onSubmit={onSubmit} className="grid gap-4 sm:gap-5 md:grid-cols-2">
         <ProfileField
-          label="First Name"
+          label="Full Name"
           required
-          value={form.firstName}
-          onChange={(event) => onChange("firstName", event.target.value)}
-          placeholder="Enter first name"
+          value={form.fullName}
+          onChange={(event) => onChange("fullName", event.target.value)}
+          placeholder="Enter full name"
         />
         <ProfileField
-          label="Last Name"
+          label="Email Address"
           required
-          value={form.lastName}
-          onChange={(event) => onChange("lastName", event.target.value)}
-          placeholder="Enter last name"
-        />
-        <ProfileField
-          label="University Email"
-          value={getUniversityEmail(user)}
-          disabled
-          placeholder="Not assigned"
-        />
-        <ProfileField
-          label="Personal Email"
           type="email"
           value={form.personalEmail}
           onChange={(event) => onChange("personalEmail", event.target.value)}
-          placeholder="Enter personal email"
+          placeholder={getUniversityEmail(user) || "Enter email address"}
         />
+        <ProfileField label="Designation" required value={roleFields.designation} disabled />
+        <ProfileField label="Department" required value={roleFields.department} disabled />
         <ProfileField label="Role" value={getRoleLabel(getPrimaryRole(user))} disabled />
-        <ProfileField label="Institution ID" value={getInstitutionId(user)} disabled />
-
-        {roleFields.map((field) => (
-          <ProfileField key={field.label} label={field.label} value={field.value} disabled />
-        ))}
+        <ProfileField label="Employee ID" required value={getInstitutionId(user)} disabled />
 
         <ProfileField
           as="textarea"

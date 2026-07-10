@@ -9,7 +9,7 @@ const ProfilePictureCard = ({ image, onImageChange, user }) => {
     <ProfileSectionCard
       icon={Camera}
       title="Profile Picture"
-      description="Upload a profile picture. JPG or PNG up to 5MB."
+      description="Upload and crop a profile picture. JPG or PNG up to 5MB."
     >
       <div className="flex flex-col items-center text-center">
         <div className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-[var(--stratex-blue)] text-4xl font-bold text-white shadow-sm">
@@ -34,7 +34,7 @@ const ProfilePictureCard = ({ image, onImageChange, user }) => {
           />
         </label>
         <p className="mt-3 text-xs font-medium leading-5 text-[var(--university-muted)]">
-          Select an image, then save changes to upload it.
+          Crop the image, then save changes to upload it.
         </p>
       </div>
     </ProfileSectionCard>

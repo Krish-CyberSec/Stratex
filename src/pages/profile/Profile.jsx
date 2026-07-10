@@ -3,11 +3,13 @@ import { useAuth } from "../../context/AuthContext";
 import { getSchoolById } from "../../services/schoolService";
 import { getUserById, updateUser } from "../../services/userService";
 import AccountOverviewCard from "./components/AccountOverviewCard";
+import AvatarCropperModal from "./components/AvatarCropperModal";
 import MfaStatusCard from "./components/MfaStatusCard";
 import ProfileDetailsForm from "./components/ProfileDetailsForm";
 import ProfileHero from "./components/ProfileHero";
 import ProfilePictureCard from "./components/ProfilePictureCard";
 import {
+  getFullName,
   getPersonalEmail,
   getPrimaryRole,
   getProfileImage,
@@ -22,11 +24,18 @@ const getSchoolId = (user) => {
 };
 
 const getInitialForm = (user) => ({
-  firstName: user?.firstName || "",
-  lastName: user?.lastName || "",
+  fullName: getFullName(user),
   personalEmail: getPersonalEmail(user) || getUniversityEmail(user),
   bio: "",
 });
+
+const splitFullName = (value) => {
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.slice(1).join(" ") || parts[0] || "",
+  };
+};
 
 const useObjectUrl = (file) => {
   const [url, setUrl] = useState("");
@@ -53,6 +62,7 @@ const Profile = () => {
   const [school, setSchool] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileFile, setProfileFile] = useState(null);
+  const [cropSourceFile, setCropSourceFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("");
   const profilePreview = useObjectUrl(profileFile);
@@ -138,6 +148,16 @@ const Profile = () => {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
+  const handleProfilePhotoSelect = (file) => {
+    if (!file) return;
+    setCropSourceFile(file);
+  };
+
+  const handleCropApply = (file) => {
+    setProfileFile(file);
+    setCropSourceFile(null);
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSaving(true);
@@ -148,8 +168,9 @@ const Profile = () => {
     try {
       if (canPersist) {
         const payload = new FormData();
-        payload.append("firstName", form.firstName.trim());
-        payload.append("lastName", form.lastName.trim());
+        const nameParts = splitFullName(form.fullName);
+        payload.append("firstName", nameParts.firstName);
+        payload.append("lastName", nameParts.lastName);
         payload.append("personalEmail", form.personalEmail.trim());
         if (profileFile) payload.append("profile", profileFile);
 
@@ -172,38 +193,50 @@ const Profile = () => {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[linear-gradient(135deg,#ffffff_0%,var(--background)_52%,#eef5ff_100%)] px-3 py-4 sm:px-5 sm:py-6 lg:px-7">
-      <div className="mx-auto max-w-7xl space-y-5">
+      <div className="mx-auto max-w-[1480px] space-y-4">
         <header className="space-y-2">
           <nav className="flex flex-wrap items-center gap-2 text-sm font-semibold text-[var(--university-muted)]">
             <span>Dashboard</span>
             <span>/</span>
-            <span className="text-[var(--university-ink)]">Profile</span>
+            <span>Profile</span>
+            <span>/</span>
+            <span className="text-[var(--university-ink)]">Edit Profile</span>
           </nav>
           <div>
             <h1 className="text-3xl font-bold leading-tight text-[var(--text-primary)] sm:text-4xl">
-              Profile
+              Edit Profile
             </h1>
             <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-[var(--text-secondary)]">
-              Manage your personal information and account overview.
+              Update your personal information and keep your profile up to date.
             </p>
           </div>
         </header>
 
         {loadingProfile ? (
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="space-y-5">
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_350px]">
+            <div className="space-y-4">
               <div className="h-56 animate-pulse rounded-2xl bg-white" />
               <div className="h-[520px] animate-pulse rounded-2xl bg-white" />
             </div>
-            <div className="space-y-5">
+            <div className="space-y-4">
               <div className="h-72 animate-pulse rounded-2xl bg-white" />
               <div className="h-64 animate-pulse rounded-2xl bg-white" />
             </div>
           </div>
         ) : (
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="space-y-5">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_350px]">
+          <div className="space-y-4">
             <ProfileHero bannerUrl={bannerUrl} profileImage={profileImage} user={enrichedUser} />
+            <div className="rounded-xl border border-[var(--border-light)] bg-white px-4 shadow-sm">
+              <div className="flex min-w-0 overflow-x-auto">
+                <button
+                  type="button"
+                  className="inline-flex h-12 shrink-0 items-center gap-2 border-b-2 border-[var(--stratex-blue)] px-4 text-sm font-bold text-[var(--stratex-blue)]"
+                >
+                  Personal Information
+                </button>
+              </div>
+            </div>
             <ProfileDetailsForm
               form={form}
               onChange={updateField}
@@ -214,10 +247,10 @@ const Profile = () => {
             />
           </div>
 
-          <aside className="space-y-5 xl:sticky xl:top-24 xl:self-start">
+          <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
             <ProfilePictureCard
               image={profileImage}
-              onImageChange={setProfileFile}
+              onImageChange={handleProfilePhotoSelect}
               user={enrichedUser}
             />
             <AccountOverviewCard user={enrichedUser} />
@@ -226,6 +259,12 @@ const Profile = () => {
         </div>
         )}
       </div>
+
+      <AvatarCropperModal
+        file={cropSourceFile}
+        onApply={handleCropApply}
+        onClose={() => setCropSourceFile(null)}
+      />
     </div>
   );
 };
