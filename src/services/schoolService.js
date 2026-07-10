@@ -12,7 +12,9 @@ export const createSchool = (data) =>
   });
 
 export const updateSchool = (id, data) =>
-  axiosInstance.put(`/schools/${id}`, data);
+  axiosInstance.put(`/schools/${id}`, data, {
+    headers: data instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined,
+  });
 
 export const deleteSchool = (id) =>
   axiosInstance.delete(`/schools/${id}`);
