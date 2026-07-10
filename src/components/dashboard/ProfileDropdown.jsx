@@ -1,4 +1,4 @@
-import React, { useRef ,useEffect} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   XIcon,
@@ -8,13 +8,79 @@ import {
 
 import { menuConfig } from "../../config/menuConfig";
 import { useAuth } from "../../context/AuthContext";
+import { getUserById } from "../../services/userService";
+
+const roleLabels = {
+  superAdmin: "Super Admin",
+  schoolAdmin: "School Admin",
+  faculty: "Faculty",
+  coordinator: "Coordinator",
+  student: "Student",
+  examCell: "Exam Cell",
+};
+
+const getFullName = (user) =>
+  user?.fullName ||
+  [user?.firstName, user?.middleName, user?.lastName].filter(Boolean).join(" ") ||
+  "Profile User";
+
+const getInitials = (name = "") =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase() || "U";
+
+const getPrimaryRole = (user) => user?.primaryRole || user?.roles?.[0] || "student";
+
+const getSchoolLabel = (user, role) => {
+  if (role === "superAdmin") return "University Administration";
+  if (role === "examCell") return "Examination Cell";
+  return user?.schoolId?.name || user?.school?.name || "School not assigned";
+};
+
+const getProfileImage = (user) => user?.profileImage || user?.profilePicture || "";
 
 const ProfileDropdown = ({ onClose }) => {
-  const role = "superAdmin";
-  const menuItems = menuConfig[role] || [];
-  const dropdownRef = useRef(null)
-  const { logout } = useAuth();
+  const dropdownRef = useRef(null);
+  const { logout, user } = useAuth();
+  const [profileUser, setProfileUser] = useState(user);
+  const role = getPrimaryRole(profileUser || user);
+  const menuItems = menuConfig[role] || (role === "coordinator" ? menuConfig.faculty : []);
   const navigate = useNavigate();
+  const displayUser = profileUser || user;
+  const name = getFullName(displayUser);
+  const schoolLabel = getSchoolLabel(displayUser, role);
+  const profileImage = getProfileImage(displayUser);
+
+  const roleLabel = useMemo(() => roleLabels[role] || "User", [role]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProfileUser = async () => {
+      if (!user?._id) {
+        setProfileUser(user);
+        return;
+      }
+
+      try {
+        const response = await getUserById(user._id);
+        const nextUser = response.data?.user || response.data?.data || response.data;
+        if (isMounted) setProfileUser(nextUser);
+      } catch {
+        if (isMounted) setProfileUser(user);
+      }
+    };
+
+    loadProfileUser();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
@@ -65,19 +131,25 @@ const ProfileDropdown = ({ onClose }) => {
       <div className="border-b border-white/10 px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img
-              src="https://tse1.mm.bing.net/th/id/OIP.hCfHyL8u8XAbreXuaiTMQgHaHZ?r=0&rs=1&pid=ImgDetMain&o=7&rm=3"
-              alt="Profile"
-              className="h-11 w-11 rounded-full object-cover ring-2 ring-white/10"
-            />
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--stratex-blue)] text-sm font-bold text-white ring-2 ring-white/10">
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt={`${name} profile`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                getInitials(name)
+              )}
+            </div>
 
-            <div>
-              <h3 className="text-sm font-semibold text-white">
-                John Doe
+            <div className="min-w-0">
+              <h3 className="max-w-40 truncate text-sm font-semibold text-white">
+                {name}
               </h3>
 
-              <p className="text-xs text-[var(--sidebar-text)]">
-                School of Engineering & Technology
+              <p className="max-w-44 truncate text-xs text-[var(--sidebar-text)]">
+                {schoolLabel}
               </p>
 
               <span
@@ -88,7 +160,7 @@ const ProfileDropdown = ({ onClose }) => {
                   text-blue-300
                 "
               >
-                Super Admin
+                {roleLabel}
               </span>
             </div>
           </div>
