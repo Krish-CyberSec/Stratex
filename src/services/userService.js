@@ -10,7 +10,9 @@ export const createUser = (data) =>
   axiosInstance.post("/users", data);
 
 export const updateUser = (id, data) =>
-  axiosInstance.put(`/users/${id}`, data);
+  axiosInstance.put(`/users/${id}`, data, {
+    headers: data instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined,
+  });
 
 export const deleteUser = (id) =>
   axiosInstance.delete(`/users/${id}`);

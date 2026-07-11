@@ -2,7 +2,6 @@ import {
   CalendarDays,
   GraduationCap,
   Mail,
-  Phone,
   ShieldCheck,
   UserRound,
   UsersRound,
@@ -78,10 +77,6 @@ const UserCard = ({ item, roleLabel }) => (
       <p className="flex min-w-0 items-center gap-2 text-xs font-semibold text-[var(--university-muted)]">
         <Mail size={14} className="shrink-0" />
         <span className="truncate">{getUserEmail(item)}</span>
-      </p>
-      <p className="flex min-w-0 items-center gap-2 text-xs font-semibold text-[var(--university-muted)]">
-        <Phone size={14} className="shrink-0" />
-        <span className="truncate">{item.phone || item.mobile || "No phone"}</span>
       </p>
     </div>
   </article>

@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Building2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import { deleteSchool, getSchoolById, updateSchool } from "../../../services/schoolService";
+import { deleteSchool, getSchoolById } from "../../../services/schoolService";
 import { getPrograms } from "../../../services/programService";
 import { getUsers } from "../../../services/userService";
 import DeleteSchoolModal from "./components/DeleteSchoolModal";
-import EditSchoolModal from "./components/EditSchoolModal";
 import SchoolAboutCard from "./components/detail/SchoolAboutCard";
 import SchoolDetailHeader from "./components/detail/SchoolDetailHeader";
 import SchoolDetailTabs from "./components/detail/SchoolDetailTabs";
@@ -36,11 +35,10 @@ const SchoolView = () => {
     students: [],
     coordinators: [],
   });
-  const [schoolHead, setSchoolHead] = useState(null);
+  const [schoolAdmin, setSchoolAdmin] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [editingSchool, setEditingSchool] = useState(null);
   const [deletingSchool, setDeletingSchool] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState("");
@@ -80,7 +78,7 @@ const SchoolView = () => {
         students: studentsResponse.data?.data || [],
         coordinators: coordinatorsResponse.data?.data || [],
       });
-      setSchoolHead(headResponse.data?.data?.[0] || null);
+      setSchoolAdmin(headResponse.data?.data?.[0] || null);
     } catch (err) {
       setError(getErrorMessage(err, "Unable to load school details"));
       setSchool(null);
@@ -92,23 +90,6 @@ const SchoolView = () => {
   useEffect(() => {
     loadSchool();
   }, [loadSchool]);
-
-  const handleEdit = async (payload) => {
-    if (!editingSchool) return;
-
-    setModalLoading(true);
-    setModalError("");
-
-    try {
-      const response = await updateSchool(editingSchool._id, payload);
-      setSchool((current) => ({ ...current, ...getPayload(response) }));
-      setEditingSchool(null);
-    } catch (err) {
-      setModalError(getErrorMessage(err, "Unable to update school"));
-    } finally {
-      setModalLoading(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!deletingSchool) return;
@@ -184,7 +165,7 @@ const SchoolView = () => {
           </div>
 
           <div className="space-y-5">
-            <SchoolInfoCard school={school} schoolHead={schoolHead} />
+            <SchoolInfoCard school={school} schoolAdmin={schoolAdmin} />
             <SchoolQuickLinks onNavigate={handleQuickNavigate} />
           </div>
         </div>
@@ -238,8 +219,7 @@ const SchoolView = () => {
             setDeletingSchool(school);
           }}
           onEdit={() => {
-            setModalError("");
-            setEditingSchool(school);
+            navigate(`/dashboard/schools/${id}/edit`);
           }}
         />
 
@@ -256,14 +236,6 @@ const SchoolView = () => {
           Back to Schools
         </button>
       </div>
-
-      <EditSchoolModal
-        school={editingSchool}
-        loading={modalLoading}
-        error={modalError}
-        onClose={() => setEditingSchool(null)}
-        onSave={handleEdit}
-      />
 
       <DeleteSchoolModal
         school={deletingSchool}

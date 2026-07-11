@@ -1,4 +1,4 @@
-import { Building2, GraduationCap, Landmark, ShieldCheck, UsersRound } from "lucide-react";
+import { Building2, GraduationCap, ShieldCheck, UsersRound } from "lucide-react";
 
 const SchoolMetricGrid = ({ counts, school }) => {
   const metrics = [
@@ -6,7 +6,6 @@ const SchoolMetricGrid = ({ counts, school }) => {
     { label: "Faculty Members", value: counts.faculty, icon: UsersRound, tone: "green" },
     { label: "Students Enrolled", value: counts.students, icon: GraduationCap, tone: "orange" },
     { label: "Coordinators", value: counts.coordinators, icon: ShieldCheck, tone: "violet" },
-    { label: "Departments", value: school.departmentCount || Math.max(counts.programs || 0, 1), icon: Landmark, tone: "teal" },
   ];
 
   const tones = {
@@ -14,7 +13,6 @@ const SchoolMetricGrid = ({ counts, school }) => {
     green: "bg-[color-mix(in_srgb,var(--success)_10%,white)] text-[var(--success)]",
     orange: "bg-orange-50 text-orange-500",
     violet: "bg-violet-50 text-violet-600",
-    teal: "bg-teal-50 text-teal-600",
   };
 
   return (

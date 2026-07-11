@@ -12,6 +12,7 @@ import Users from "../pages/admin/users/Users";
 import CreateUser from "../pages/admin/users/CreateUser";
 import Schools from "../pages/admin/schools/Schools";
 import CreateSchool from "../pages/admin/schools/CreateSchool";
+import EditSchool from "../pages/admin/schools/EditSchool";
 import SchoolView from "../pages/admin/schools/SchoolView";
 import Programs from "../pages/admin/programs/Programs";
 import Subjects from "../pages/admin/subjects/Subjects";
@@ -19,7 +20,7 @@ import Notification from "../components/dashboard/Notifications";
 import NotificationDetail from "../components/dashboard/NotificationDetail";
 import Notices from "../pages/admin/notices/Notices";
 import Events from "../pages/admin/events/Events";
-import Profile from "../pages/admin/profile/profile";
+import Profile from "../pages/profile/Profile";
 
 const Navlinks = () => {
   return (
@@ -42,7 +43,7 @@ const Navlinks = () => {
         path="/dashboard"
         element={
           <ProtectedRoute
-            allowedRoles={["superAdmin", "schoolAdmin", "faculty", "student"]}
+            allowedRoles={["superAdmin", "schoolAdmin", "faculty", "student", "examCell"]}
           >
             <DashboardLayout />
           </ProtectedRoute>
@@ -80,6 +81,14 @@ const Navlinks = () => {
           element={
             <ProtectedRoute allowedRoles={["superAdmin"]}>
               <CreateSchool />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="schools/:id/edit"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin"]}>
+              <EditSchool />
             </ProtectedRoute>
           }
         />
