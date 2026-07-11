@@ -23,6 +23,8 @@ import SubjectView from "../pages/admin/subjects/SubjectView";
 import Notification from "../components/dashboard/Notifications";
 import NotificationDetail from "../components/dashboard/NotificationDetail";
 import Notices from "../pages/admin/notices/Notices";
+import CreateNotice from "../pages/admin/notices/CreateNotice";
+import NoticeView from "../pages/admin/notices/NoticeView";
 import Events from "../pages/admin/events/Events";
 import Profile from "../pages/profile/Profile";
 
@@ -158,6 +160,15 @@ const Navlinks = () => {
         <Route path="notifications" element={<Notification />} />
         <Route path="notifications/:id" element={<NotificationDetail />} />
 
+        <Route
+          path="notices/create"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin", "examCell"]}>
+              <CreateNotice />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="notices/:id" element={<NoticeView />} />
         <Route path="notices" element={<Notices />} />
         <Route path="events" element={<Events />} />
         <Route path="profile" element={<Profile />} />

@@ -1,11 +1,12 @@
-import { BookOpenCheck, Edit3, RefreshCw, X } from "lucide-react";
+import { BookOpenCheck, Edit3, RefreshCw, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { getPrograms } from "../../../services/programService";
 import { getSemesters } from "../../../services/semesterService";
 import { getSpecializations } from "../../../services/specializationService";
-import { getSubjectById, updateSubject } from "../../../services/subjectService";
+import { deleteSubject, getSubjectById, updateSubject } from "../../../services/subjectService";
+import DeleteSubjectModal from "./components/DeleteSubjectModal";
 import SubjectDetailHeader from "./components/detail/SubjectDetailHeader";
 import SubjectDetailSidebar from "./components/detail/SubjectDetailSidebar";
 import SubjectEditPanel from "./components/detail/SubjectEditPanel";
@@ -59,8 +60,11 @@ const SubjectView = () => {
   const [editStep, setEditStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [editError, setEditError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const roles = user?.roles || [];
   const isSuperAdmin = roles.includes("superAdmin");
@@ -223,6 +227,20 @@ const SubjectView = () => {
     }
   };
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    setDeleteError("");
+
+    try {
+      await deleteSubject(id);
+      navigate("/dashboard/subjects");
+    } catch (err) {
+      setDeleteError(getErrorMessage(err, "Unable to delete subject"));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-[calc(100vh-4rem)] bg-[linear-gradient(135deg,#ffffff_0%,var(--background)_52%,#f5f7ff_100%)] px-3 py-5 sm:px-5 lg:px-7">
@@ -279,14 +297,27 @@ const SubjectView = () => {
                   Cancel Edit
                 </button>
               ) : (
-                <button
-                  type="button"
-                  onClick={startEditing}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--stratex-blue)] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--stratex-blue-dark)]"
-                >
-                  <Edit3 size={15} />
-                  Edit Mode
-                </button>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={startEditing}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--stratex-blue)] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--stratex-blue-dark)]"
+                  >
+                    <Edit3 size={15} />
+                    Edit Mode
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteError("");
+                      setDeleteOpen(true);
+                    }}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 px-4 text-xs font-bold text-[var(--error)] shadow-sm transition hover:border-[var(--error)] hover:bg-[var(--error)] hover:text-white"
+                  >
+                    <Trash2 size={15} />
+                    Delete
+                  </button>
+                </div>
               )
             ) : null
           }
@@ -332,6 +363,16 @@ const SubjectView = () => {
           </div>
         )}
       </div>
+
+      <DeleteSubjectModal
+        error={deleteError}
+        loading={deleting}
+        onClose={() => {
+          if (!deleting) setDeleteOpen(false);
+        }}
+        onDelete={handleDelete}
+        subject={deleteOpen ? subject : null}
+      />
     </div>
   );
 };
