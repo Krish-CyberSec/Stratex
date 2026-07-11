@@ -1,7 +1,7 @@
 import axiosInstance from "../utils/axiosInstance";
 
-export const getSubjects = () =>
-  axiosInstance.get("/subjects");
+export const getSubjects = (params = {}) =>
+  axiosInstance.get("/subjects", { params });
 
 export const createSubject = (data) =>
   axiosInstance.post("/subjects", data);

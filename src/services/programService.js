@@ -3,6 +3,9 @@ import axiosInstance from "../utils/axiosInstance";
 export const getPrograms = (params = {}) =>
   axiosInstance.get("/programs", { params });
 
+export const getProgramById = (id) =>
+  axiosInstance.get(`/programs/${id}`);
+
 export const createProgram = (data) =>
   axiosInstance.post("/programs", data);
 

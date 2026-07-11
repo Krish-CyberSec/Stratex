@@ -16,8 +16,27 @@ import {
   truncateText,
 } from "../../config/notificationConfig";
 import NotificationAvatar from "./notifications/NotificationAvatar";
+import { useAuth } from "../../context/AuthContext";
+
+const getFullName = (user) =>
+  user?.fullName ||
+  [user?.firstName, user?.middleName, user?.lastName].filter(Boolean).join(" ") ||
+  "Profile User";
+
+const getInitials = (name = "") =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase() || "U";
+
+const getProfileImage = (user) => user?.profileImage || user?.profilePicture || "";
+
 // import {} from 'lucide-react'
 const Navbar = () => {
+  const { user } = useAuth();
   const [profileClicked, setProfileClicked] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [notificationLoading, setNotificationLoading] = useState(false);
@@ -98,6 +117,8 @@ const Navbar = () => {
   };
 
   const previewNotifications = getPreviewNotifications(notifications);
+  const userName = getFullName(user);
+  const profileImage = getProfileImage(user);
 
   //
   return (
@@ -133,12 +154,22 @@ const Navbar = () => {
         </div>
         <div className="w-[60%]  flex flex-row-reverse  items-center px-2 gap-3">
           <div className="group">
-            <img
-              src="https://tse1.mm.bing.net/th/id/OIP.hCfHyL8u8XAbreXuaiTMQgHaHZ?r=0&rs=1&pid=ImgDetMain&o=7&rm=3"
-              alt=""
-              className="rounded-full  bg-[#eef7fc] w-9 cursor-pointer "
+            <button
+              type="button"
               onClick={() => setProfileClicked((prev) => !prev)}
-            />
+              className="flex h-9 w-9 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-[var(--stratex-blue)] text-xs font-bold text-white ring-2 ring-white/15"
+              aria-label="Open user navigation menu"
+            >
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt={`${userName} profile`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                getInitials(userName)
+              )}
+            </button>
             <div className="absolute top-10 right-3 z-10 h-8 w-45 flex items-center rounded-lg rounded-tr-xs bg-[var(--stratex-navy-light20)] opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible">
               <p className="pl-3 text-xs text-[var(--text-inverse)]">
                 Open user navigation menu
