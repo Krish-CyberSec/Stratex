@@ -131,7 +131,7 @@ const Navlinks = () => {
         <Route
           path="subjects"
           element={
-            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin", "faculty"]}>
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin", "faculty", "coordinator", "student"]}>
               <Subjects />
             </ProtectedRoute>
           }
