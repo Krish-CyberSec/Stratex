@@ -699,9 +699,11 @@ const CreateUser = () => {
               />
 
               <div className="mt-6 grid gap-5 lg:grid-cols-[210px_minmax(0,1fr)]">
-                <div>
-                  <p className={labelClass}>Profile Photo</p>
-                  <label className="flex aspect-square w-full max-w-[210px] cursor-pointer flex-col items-center justify-center rounded-full border border-dashed border-[#b8c9df] bg-white text-center transition hover:border-blue-400 hover:bg-blue-50/40">
+                <div className="flex flex-col items-center lg:items-start">
+                  <p className={`${labelClass} text-center lg:text-left`}>
+  Profile Photo
+</p>
+                  <label className="mx-auto flex aspect-square w-full max-w-[210px] cursor-pointer flex-col items-center justify-center rounded-full border border-dashed border-[#b8c9df] bg-white text-center transition hover:border-blue-400 hover:bg-blue-50/40 lg:mx-0">
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/svg+xml"
