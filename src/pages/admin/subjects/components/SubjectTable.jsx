@@ -1,4 +1,4 @@
-import { ChevronRight, Edit3, Trash2 } from "lucide-react";
+import { ChevronRight, Eye } from "lucide-react";
 import { SubjectStatusBadge, SubjectTypeBadge } from "./SubjectBadges";
 
 const getPersonName = (person) => {
@@ -7,9 +7,10 @@ const getPersonName = (person) => {
   return name || person.universityAccount?.universityEmail || "Not assigned";
 };
 
-const SubjectTable = ({ canManage, loading, onDelete, onEdit, subjects }) => (
+const SubjectTable = ({ canManage, loading, onDelete, onView, subjects }) => {
+  return (
   <div className="overflow-hidden rounded-xl border border-[var(--border-light)]">
-    <div className="hidden overflow-x-auto lg:block">
+    <div className="hidden overflow-visible lg:block">
       <table className="min-w-full table-fixed text-left">
         <thead className="bg-[var(--surface-soft)] text-xs font-bold text-[var(--university-muted)]">
           <tr>
@@ -36,7 +37,9 @@ const SubjectTable = ({ canManage, loading, onDelete, onEdit, subjects }) => (
               <tr key={subject._id} className="text-xs font-semibold text-[var(--university-ink)] transition hover:bg-[var(--surface-soft)]">
                 <td className="px-5 py-4">{subject.code}</td>
                 <td className="px-5 py-4">
-                  <p className="truncate font-bold">{subject.name}</p>
+                  <button type="button" onClick={() => onView(subject)} className="block max-w-full truncate text-left font-bold hover:text-[var(--stratex-blue)]">
+                    {subject.name}
+                  </button>
                   <p className="truncate text-[11px] text-[var(--university-muted)]">{subject.programId?.name || subject.description || "No description"}</p>
                 </td>
                 <td className="px-5 py-4"><SubjectTypeBadge subject={subject} /></td>
@@ -49,16 +52,24 @@ const SubjectTable = ({ canManage, loading, onDelete, onEdit, subjects }) => (
                 <td className="px-5 py-4">
                   <div className="flex justify-end gap-2">
                     {canManage ? (
-                      <>
-                        <button type="button" onClick={() => onEdit(subject)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--university-muted)] hover:text-[var(--stratex-blue)]" title="Edit subject">
-                          <Edit3 size={14} />
-                        </button>
-                        <button type="button" onClick={() => onDelete(subject)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--university-muted)] hover:text-[var(--error)]" title="Deactivate subject">
-                          <Trash2 size={14} />
-                        </button>
-                      </>
+                      <button
+                        type="button"
+                        onClick={() => onView(subject)}
+                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color-mix(in_srgb,var(--stratex-blue)_28%,white)] bg-blue-50 px-3 text-xs font-black text-[var(--stratex-blue)] transition hover:border-[var(--stratex-blue)] hover:bg-[var(--stratex-blue)] hover:text-white"
+                        title="View subject details"
+                      >
+                        <Eye size={14} />
+                        View
+                      </button>
                     ) : (
-                      <ChevronRight size={16} className="text-[var(--university-muted)]" />
+                      <button
+                        type="button"
+                        onClick={() => onView(subject)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--university-muted)] transition hover:border-[var(--stratex-blue)] hover:text-[var(--stratex-blue)]"
+                        title="View subject"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
                     )}
                   </div>
                 </td>
@@ -95,12 +106,12 @@ const SubjectTable = ({ canManage, loading, onDelete, onEdit, subjects }) => (
               <span className="rounded-full bg-[var(--surface-soft)] px-2.5 py-1 text-[11px] font-bold text-[var(--university-muted)]">{subject.credits ?? 0} Credits</span>
             </div>
             <p className="mt-3 truncate text-xs font-semibold text-[var(--university-muted)]">Coordinator: {getPersonName(subject.coordinatorId)}</p>
-            {canManage ? (
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => onEdit(subject)} className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-bold text-[var(--stratex-blue)]">Edit</button>
+            <div className={`mt-4 grid gap-2 ${canManage ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}>
+              <button type="button" onClick={() => onView(subject)} className="rounded-lg border border-[var(--stratex-blue)] bg-blue-50 px-3 py-2 text-xs font-bold text-[var(--stratex-blue)]">View Details</button>
+              {canManage ? (
                 <button type="button" onClick={() => onDelete(subject)} className="rounded-lg border border-red-100 px-3 py-2 text-xs font-bold text-[var(--error)]">Deactivate</button>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </article>
         ))
       ) : (
@@ -110,6 +121,7 @@ const SubjectTable = ({ canManage, loading, onDelete, onEdit, subjects }) => (
       )}
     </div>
   </div>
-);
+  );
+};
 
 export default SubjectTable;

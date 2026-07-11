@@ -18,6 +18,8 @@ import Programs from "../pages/admin/programs/Programs";
 import CreateProgram from "../pages/admin/programs/CreateProgram";
 import ProgramView from "../pages/admin/programs/ProgramView";
 import Subjects from "../pages/admin/subjects/Subjects";
+import CreateSubject from "../pages/admin/subjects/CreateSubject";
+import SubjectView from "../pages/admin/subjects/SubjectView";
 import Notification from "../components/dashboard/Notifications";
 import NotificationDetail from "../components/dashboard/NotificationDetail";
 import Notices from "../pages/admin/notices/Notices";
@@ -45,7 +47,7 @@ const Navlinks = () => {
         path="/dashboard"
         element={
           <ProtectedRoute
-            allowedRoles={["superAdmin", "schoolAdmin", "faculty", "student", "examCell"]}
+            allowedRoles={["superAdmin", "schoolAdmin", "faculty", "coordinator", "student", "examCell"]}
           >
             <DashboardLayout />
           </ProtectedRoute>
@@ -128,6 +130,22 @@ const Navlinks = () => {
           }
         />
 
+        <Route
+          path="subjects/create"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
+              <CreateSubject />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="subjects/:id"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin", "faculty", "coordinator", "student"]}>
+              <SubjectView />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="subjects"
           element={

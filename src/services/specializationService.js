@@ -1,7 +1,7 @@
 import axiosInstance from "../utils/axiosInstance";
 
-export const getSpecializations = () =>
-  axiosInstance.get("/specializations");
+export const getSpecializations = (params = {}) =>
+  axiosInstance.get("/specializations", { params });
 
 export const createSpecialization = (data) =>
   axiosInstance.post("/specializations", data);

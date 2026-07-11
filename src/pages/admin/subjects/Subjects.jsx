@@ -1,10 +1,10 @@
 import { BookOpenCheck } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { getPrograms } from "../../../services/programService";
-import { deleteSubject, getSubjects, updateSubject } from "../../../services/subjectService";
+import { deleteSubject, getSubjects } from "../../../services/subjectService";
 import DeleteSubjectModal from "./components/DeleteSubjectModal";
-import EditSubjectModal from "./components/EditSubjectModal";
 import SubjectProgramSelector from "./components/SubjectProgramSelector";
 import SubjectSemesterTabs from "./components/SubjectSemesterTabs";
 import SubjectTable from "./components/SubjectTable";
@@ -39,6 +39,7 @@ const buildSemesters = (program, subjects, programs) => {
 
 const Subjects = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [programs, setPrograms] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [selectedProgramId, setSelectedProgramId] = useState("");
@@ -49,7 +50,6 @@ const Subjects = () => {
   const [modalLoading, setModalLoading] = useState(false);
   const [error, setError] = useState("");
   const [modalError, setModalError] = useState("");
-  const [editingSubject, setEditingSubject] = useState(null);
   const [deletingSubject, setDeletingSubject] = useState(null);
 
   const roles = user?.roles || [];
@@ -146,6 +146,8 @@ const Subjects = () => {
     return counts;
   }, [subjects]);
 
+  const canAddSubject = canManage;
+
   const visibleSubjects = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -157,22 +159,6 @@ const Subjects = () => {
       return matchesSemester && matchesSearch;
     });
   }, [activeSemester, activeTab, search, subjects]);
-
-  const handleEdit = async (payload) => {
-    if (!editingSubject) return;
-    setModalLoading(true);
-    setModalError("");
-
-    try {
-      await updateSubject(editingSubject._id, payload);
-      setEditingSubject(null);
-      await loadSubjects();
-    } catch (err) {
-      setModalError(getErrorMessage(err, "Unable to update subject"));
-    } finally {
-      setModalLoading(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!deletingSubject) return;
@@ -273,7 +259,12 @@ const Subjects = () => {
                     : `Showing Semester ${activeSemester} subjects across all programs.`}
                 </p>
               </div>
-              <SubjectToolbar search={search} onSearch={setSearch} />
+              <SubjectToolbar
+                canAdd={canAddSubject}
+                onAdd={() => navigate("/dashboard/subjects/create")}
+                search={search}
+                onSearch={setSearch}
+              />
             </div>
 
             {error ? (
@@ -289,10 +280,7 @@ const Subjects = () => {
                 setModalError("");
                 setDeletingSubject(subject);
               }}
-              onEdit={(subject) => {
-                setModalError("");
-                setEditingSubject(subject);
-              }}
+              onView={(subject) => navigate(`/dashboard/subjects/${subject._id}`)}
               subjects={visibleSubjects}
             />
 
@@ -317,14 +305,6 @@ const Subjects = () => {
           </div>
         </div>
       </div>
-
-      <EditSubjectModal
-        error={modalError}
-        loading={modalLoading}
-        onClose={() => setEditingSubject(null)}
-        onSubmit={handleEdit}
-        subject={editingSubject}
-      />
 
       <DeleteSubjectModal
         error={modalError}
