@@ -12,6 +12,10 @@ const formatRole = (role) => {
 
   return roleMap[role] || role;
 };
+const formatRoles = (roles = []) => {
+  const roleList = Array.isArray(roles) ? roles : [roles].filter(Boolean);
+  return roleList.map(formatRole).join(", ");
+};
 const EditUserModal = ({ user, onClose, onSave, loading = false }) => {
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
@@ -29,7 +33,7 @@ const EditUserModal = ({ user, onClose, onSave, loading = false }) => {
       setFormData({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
-        personalEmail: user.personalEmail || "",
+        personalEmail: user.personalEmail || user.email || "",
         status: user.status || "active",
       });
 
@@ -193,7 +197,7 @@ p-4
             <p
               className="flex h-11 items-center rounded-xl border border-[var(--border-light)] bg-[var(--surface-soft)] px-3 text-sm font-semibold text-[var(--university-ink)]"
             >
-              {formatRole(user.role)}
+              {formatRoles(user.roles || user.role)}
             </p>
           </div>
           <div>

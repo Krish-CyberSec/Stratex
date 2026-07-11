@@ -3,18 +3,21 @@ import {
   updateUser,
   deleteUser,
 } from "../../../services/userService";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import UserDetails from "./components/UserDetails";
 import EditUserModal from "./components/EditUserModal";
 import DeleteUserModal from "./components/DeleteUserModal";
 import { useLocation, useNavigate } from "react-router-dom";
 import Datatable from "../../../components/users/DataTable";
 import SearchBar from "../../../components/users/SearchBar";
+import styled from "styled-components";
 import {
+  ArrowRight,
+  Building2,
   Pencil,
   Plus,
+  Shield,
   Trash2,
-  MoreVertical,
   UsersRound,
   Users as UsersIcon,
   UserCheck,
@@ -36,10 +39,17 @@ const formatRole = (role) => {
   };
   return roleMap[role] || role;
 };
+const formatRoles = (roles = []) => {
+  const roleList = Array.isArray(roles) ? roles : [roles].filter(Boolean);
+  return roleList.map(formatRole).join(", ");
+};
 const normalizeUser = (user) => {
+  const roles = user.roles?.length ? user.roles : [user.role || "student"];
+
   return {
     ...user,
-    role: user.roles?.[0] || user.role || "student",
+    roles,
+    role: roles[0],
     email:
       user.universityAccount?.universityEmail ||
       user.personalEmail ||
@@ -60,13 +70,72 @@ const userStatToneClass = {
   action:
     "bg-[color-mix(in_srgb,var(--stratex-blue)_10%,white)] text-[var(--stratex-blue)]",
 };
+const ActionButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 
+  padding: 11px 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: all 160ms ease;
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+const PrimaryButton = styled(ActionButton)`
+  background: var(--university-blue);
+  color: white;
+
+  &:hover {
+    background: var(--university-blue-dark);
+  }
+`;
+
+const SecondaryButton = styled(ActionButton)`
+  background: white;
+  color: var(--text-primary);
+  border-color: var(--university-border);
+
+  &:hover {
+    background: var(--background);
+  }
+`;
+
+const DangerButton = styled(ActionButton)`
+  background: #dc2626;
+  color: white;
+
+  &:hover {
+    background: #b91c1c;
+  }
+`;
+
+const IconButton = styled(SecondaryButton)`
+  width: 38px;
+  height: 38px;
+  padding: 0;
+`;
+
+const DangerIconButton = styled(DangerButton)`
+  width: 38px;
+  height: 38px;
+  padding: 0;
+`;
 const Users = () => {
-  const [menuPosition, setMenuPosition] = useState({
-    top: 0,
-    left: 0,
-  });
-  const menuButtonRefs = useRef({});
   const [currentPage, setCurrentPage] = useState(1);
 
   const [users, setUsers] = useState([]);
@@ -77,6 +146,7 @@ const Users = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [sortBy, setSortBy] = useState("name");
+  const [viewMode, setViewMode] = useState("grid");
   const [pagination, setPagination] = useState({
     limit: USERS_PER_PAGE,
     total: 0,
@@ -89,6 +159,7 @@ const Users = () => {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError("");
+    setSuccess("");
 
     try {
       const [response, activeResponse, facultyResponse] = await Promise.all([
@@ -125,32 +196,23 @@ const Users = () => {
       setLoading(false);
     }
   }, [currentPage, searchTerm, roleFilter, sortBy]);
+  const handleRefresh = async () => {
+    if (loading) return;
+
+    setLoading(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    await fetchUsers();
+  };
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
-  const [openMenu, setOpenMenu] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (
-        openMenu &&
-        !event.target.closest(".floating-user-menu") &&
-        !event.target.closest(".menu-trigger")
-      ) {
-        setOpenMenu(null);
-      }
-    }
 
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [openMenu]);
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, roleFilter, sortBy]);
@@ -242,6 +304,34 @@ const Users = () => {
   };
 
   const totalPages = pagination.totalPages || 1;
+  const statusClass = (status) =>
+    status?.toLowerCase() === "active"
+      ? "bg-[color-mix(in_srgb,var(--success)_10%,white)] text-[var(--success)]"
+      : "bg-[color-mix(in_srgb,var(--error)_10%,white)] text-[var(--error)]";
+
+  const handleEditClick = (user) => {
+    setSelectedUser(null);
+    setEditingUser(user);
+  };
+
+  const handleDeleteClick = (user) => {
+    setSelectedUser(null);
+    setDeletingUser(user);
+  };
+
+  const renderEmptyState = () => (
+    <div className="rounded-2xl border border-[var(--border-light)] bg-white px-5 py-12 text-center shadow-sm">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--university-blue)_10%,white)] text-[var(--university-blue-dark)]">
+        <UsersRound size={22} />
+      </div>
+      <p className="text-sm font-bold text-[var(--university-ink)]">
+        No users found
+      </p>
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[var(--university-muted)]">
+        Try changing your search term or create a new user.
+      </p>
+    </div>
+  );
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[linear-gradient(135deg,#ffffff_0%,var(--background)_48%,#eef5ff_100%)] px-3 py-5 sm:px-5 lg:px-7">
@@ -256,14 +346,13 @@ const Users = () => {
             </p>
           </div>
 
-          <button
+          <PrimaryButton
             type="button"
             onClick={() => navigate("/dashboard/users/create")}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--stratex-blue)] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[var(--stratex-blue-dark)]"
           >
             <Plus size={17} />
             Add User
-          </button>
+          </PrimaryButton>
         </header>
 
         <section className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -304,7 +393,7 @@ const Users = () => {
               onClick={stat.onClick}
               className={`min-h-32 rounded-2xl border border-[var(--border-light)] bg-white p-5 text-left shadow-sm transition ${
                 stat.onClick
-                  ? "hover:-translate-y-0.5 hover:border-[var(--stratex-blue)] hover:shadow-md"
+                  ? "cursor-pointer hover:-translate-y-0.5 hover:border-[var(--stratex-blue)] hover:shadow-md"
                   : "cursor-default"
               }`}
             >
@@ -337,296 +426,194 @@ const Users = () => {
           setRoleFilter={setRoleFilter}
           sortBy={sortBy}
           setSortBy={setSortBy}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          onRefresh={handleRefresh}
+          loading={loading}
         />
 
-        <section className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-white shadow-sm">
+        <section className="space-y-4">
           {success && (
-            <div className="mx-4 mt-4 rounded-xl border border-[color-mix(in_srgb,var(--success)_24%,white)] bg-[color-mix(in_srgb,var(--success)_10%,white)] px-4 py-3 text-sm font-semibold text-[var(--success)]">
+            <div className="rounded-xl border border-[color-mix(in_srgb,var(--success)_24%,white)] bg-[color-mix(in_srgb,var(--success)_10%,white)] px-4 py-3 text-sm font-semibold text-[var(--success)]">
               {success}
             </div>
           )}
           {error && !loading && (
-            <div className="mx-4 mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-[var(--error)]">
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-[var(--error)]">
               {error}
             </div>
           )}
-          <div className="overflow-x-auto">
-            <div className="max-h-[640px] overflow-auto">
-              <table className="w-full min-w-[900px] border-collapse text-left">
-                <thead>
-                  <tr className="border-b border-[var(--border-light)] bg-[var(--surface-soft)]">
-                    <th
-                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-[var(--university-muted)] sm:px-5"
-                    >
-                      Name
-                    </th>
-                    <th
-                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-[var(--university-muted)] sm:px-5"
-                    >
-                      Email
-                    </th>
-                    <th
-                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-[var(--university-muted)] sm:px-5"
-                    >
-                      Role
-                    </th>
-                    <th
-                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-[var(--university-muted)] sm:px-5"
-                    >
-                      Status
-                    </th>
-                    <th
-                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-[var(--university-muted)] sm:px-5"
-                    >
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
 
-                <tbody>
-                  {loading && (
-                    <tr>
-                      <td
-                        colSpan="5"
-                        className="px-5 py-12 text-center text-sm"
-                      >
-                        Loading users...
-                      </td>
-                    </tr>
-                  )}
-
-                  {error && !loading && users.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan="5"
-                        className="px-5 py-12 text-center text-sm text-red-600"
-                      >
-                        {error}
-                      </td>
-                    </tr>
-                  )}
-                  {!loading &&
-                    users.map((user) => (
-                      <tr
-                        onClick={() => {
-                          setSelectedUser(user);
-                        }}
-                        key={user._id}
-                        className={`
-    cursor-pointer
-    relative
-    ${openMenu === user._id ? "z-50" : "z-0"}
-    duration-200
-    border-b
-border-[var(--border-light)]
-bg-white
-transition-colors
-md:hover:bg-[var(--surface-soft)]
-                  `}
-                      >
-                        <td className="px-4 py-4 sm:px-5">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <div
-                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--stratex-blue)_10%,white)] text-sm font-bold text-[var(--stratex-blue)]"
-                            >
-                              {getInitials(user.firstName, user.lastName)}
-                            </div>
-
-                            <div className="min-w-0">
-                              <p
-                                className="truncate text-sm font-bold text-[var(--university-ink)]"
-                              >
-                                {user.firstName} {user.lastName}
-                              </p>
-                              <p className="mt-0.5 text-xs font-medium text-[var(--university-muted)]">
-                                {user.school}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-sm font-medium text-[var(--university-muted)] sm:px-5">
-                          {user.email}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-[var(--university-muted)] sm:px-5">
-                          <span className="inline-flex rounded-full bg-[color-mix(in_srgb,var(--stratex-blue)_9%,white)] px-3 py-1 text-xs font-bold text-[var(--stratex-blue)]">
-                            {formatRole(user.role)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 sm:px-5">
-                          <span
-                            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold capitalize ${
-                              user.status?.toLowerCase() === "active"
-                                ? "bg-[color-mix(in_srgb,var(--success)_10%,white)] text-[var(--success)]"
-                                : "bg-[color-mix(in_srgb,var(--error)_10%,white)] text-[var(--error)]"
-                            }`}
-                          >
-                            {user.status}
-                          </span>
-                        </td>
-                        <td className="relative overflow-visible px-4 py-4 sm:px-5">
-                          <button
-                            ref={(el) =>
-                              (menuButtonRefs.current[user._id] = el)
-                            }
-                            onClick={(e) => {
-                              e.stopPropagation();
-
-                              const rect =
-                                menuButtonRefs.current[
-                                  user._id
-                                ]?.getBoundingClientRect();
-
-                              if (!rect) return;
-
-                              const menuWidth = 208;
-                              const menuHeight = 120;
-
-                              let top = rect.bottom + 8;
-                              let left = rect.right - menuWidth;
-
-                              if (
-                                window.innerHeight - rect.bottom <
-                                menuHeight
-                              ) {
-                                top = rect.top - menuHeight - 8;
-                              }
-
-                              if (left < 8) left = 8;
-
-                              setMenuPosition({
-                                top,
-                                left,
-                              });
-                              if (openMenu === user._id) {
-                                setOpenMenu(null);
-                                return;
-                              }
-
-                              setOpenMenu(user._id);
-                            }}
-                            className="menu-trigger inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-light)] bg-white text-[var(--university-muted)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--university-ink)]"
-                          >
-                            <MoreVertical size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-
-                  {!loading && !error && users.length === 0 && (
-                    <tr>
-                      <td colSpan="5" className="px-5 py-12 text-center">
-                        <div className="mx-auto flex max-w-sm flex-col items-center">
-                          <div className="mb-3 flex h-14 w-14 shadow-sm items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--university-blue)_10%,white)] text-[var(--university-blue-dark)]">
-                            <UsersRound size={20} />
-                          </div>
-
-                          <p className="text-sm font-semibold text-[var(--university-ink)]">
-                            No users found
-                          </p>
-
-                          <p className="mt-1 text-sm leading-6 text-[var(--university-muted)]">
-                            Try changing your search term or create a new user.
-                          </p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+          {loading && (
+            <div
+              className={
+                viewMode === "grid"
+                  ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+                  : "grid gap-3"
+              }
+            >
+              {Array.from({ length: USERS_PER_PAGE }).map((_, index) => (
+                <div
+                  key={index}
+                  className="min-h-[180px] animate-pulse rounded-2xl border border-[var(--border-light)] bg-white p-4 shadow-sm"
+                >
+                  <div className="h-12 w-12 rounded-full bg-[var(--surface-hover)]" />
+                  <div className="mt-5 h-4 w-3/4 rounded bg-[var(--surface-hover)]" />
+                  <div className="mt-3 h-3 w-full rounded bg-[var(--surface-hover)]" />
+                  <div className="mt-2 h-3 w-5/6 rounded bg-[var(--surface-hover)]" />
+                </div>
+              ))}
             </div>
-          </div>
-          <div className="border-t border-[var(--border-light)] px-4 py-4">
-            <Datatable
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              totalItems={pagination.total}
-              pageSize={pagination.limit}
-              itemCount={users.length}
-              itemLabel="users"
-            />
-          </div>
+          )}
+
+          {!loading && !error && users.length === 0 && renderEmptyState()}
+
+          {!loading && users.length > 0 && viewMode === "grid" && (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {users.map((user) => (
+                <article
+                  key={user._id}
+                  className="flex min-h-[248px] flex-col rounded-2xl border border-[var(--border-light)] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--university-blue)_28%,white)] hover:shadow-md"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--stratex-blue)_10%,white)] text-sm font-bold text-[var(--stratex-blue)]">
+                      {getInitials(user.firstName, user.lastName)}
+                    </div>
+                    <span
+                      className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${statusClass(user.status)}`}
+                    >
+                      {user.status || "Unknown"}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 min-w-0 flex-1">
+                    <h3 className="line-clamp-2 text-sm font-bold leading-5 text-[var(--university-ink)]">
+                      {user.firstName} {user.lastName}
+                    </h3>
+                    <p className="mt-2 break-all text-xs font-medium leading-5 text-[var(--text-secondary)]">
+                      {user.email}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 grid gap-2 border-t border-[var(--border-light)] pt-3">
+                    <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-[var(--university-muted)]">
+                      <Shield size={15} className="shrink-0" />
+                      <span>{formatRoles(user.roles)}</span>
+                    </div>
+                    <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-[var(--university-muted)]">
+                      <Building2 size={15} className="shrink-0" />
+                      <span className="truncate">{user.school}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 gap-2 border-t border-[var(--border-light)] pt-3 sm:grid-cols-3">
+                    <PrimaryButton
+                      type="button"
+                      onClick={() => setSelectedUser(user)}
+                    >
+                      View
+                      <ArrowRight size={14} />
+                    </PrimaryButton>
+                    <SecondaryButton
+                      type="button"
+                      onClick={() => handleEditClick(user)}
+                    >
+                      <Pencil size={14} />
+                    </SecondaryButton>
+                    <DangerButton
+                      type="button"
+                      onClick={() => handleDeleteClick(user)}
+                    >
+                      <Trash2 size={14} />
+                    </DangerButton>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
+          {!loading && users.length > 0 && viewMode === "list" && (
+            <div className="grid gap-3">
+              {users.map((user) => (
+                <article
+                  key={user._id}
+                  onClick={() => setSelectedUser(user)}
+                  className="flex flex-col gap-4 rounded-2xl border border-[var(--border-light)] bg-white p-4 shadow-sm transition cursor-pointer hover:border-[color-mix(in_srgb,var(--university-blue)_28%,white)] hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="flex min-w-0 flex-1 items-start gap-4 sm:items-center">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--stratex-blue)_10%,white)] text-base font-bold text-[var(--stratex-blue)]">
+                      {getInitials(user.firstName, user.lastName)}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="truncate text-lg font-bold text-[var(--university-ink)]">
+                        {user.firstName} {user.lastName}
+                      </h3>
+                      <p className="mt-1 max-w-full truncate text-sm text-[var(--text-secondary)]">
+                        {user.email}
+                      </p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2 overflow-hidden">
+                        <span className="rounded-full bg-[color-mix(in_srgb,var(--stratex-blue)_9%,white)] px-2.5 py-1 text-[11px] font-bold text-[var(--stratex-blue)]">
+                          {formatRoles(user.roles)}
+                        </span>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-bold capitalize ${statusClass(user.status)}`}
+                        >
+                          {user.status || "Unknown"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className="flex w-full flex-wrap items-center gap-2 sm:ml-4 sm:w-auto sm:justify-end"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span className="inline-flex max-w-full items-center gap-2 rounded-full bg-[var(--surface-soft)] px-3 py-1 text-xs font-bold text-[var(--university-muted)]">
+                      <Building2 size={14} />
+                      <span className="max-w-[180px] truncate sm:max-w-[220px]">
+                        {user.school}
+                      </span>
+                    </span>
+
+                    <IconButton
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditClick(user);
+                      }}
+                    >
+                      <Pencil size={14} />
+                    </IconButton>
+                    <DangerIconButton
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(user);
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </DangerIconButton>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
+          {!loading && users.length > 0 && (
+            <div className="rounded-2xl border border-[var(--border-light)] bg-white px-4 py-4 shadow-sm">
+              <Datatable
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={pagination.total}
+                pageSize={pagination.limit}
+                itemCount={users.length}
+                itemLabel="users"
+              />
+            </div>
+          )}
         </section>
       </div>
-      {openMenu && (
-        <div
-          className="fixed floating-user-menu z-[9999]"
-          style={{
-            top: menuPosition.top,
-            left: menuPosition.left,
-          }}
-        >
-          <div
-            className="
-        w-52
-        rounded-2xl
-        border
-        border-[var(--university-border)]
-        bg-white
-        p-2
-        shadow-[0_20px_40px_rgba(15,23,42,0.18)]
-      "
-          >
-            <button
-              className="
-          mx-2
-          my-1
-          flex
-          w-[calc(100%-16px)]
-          items-center
-          gap-3
-          rounded-xl
-          px-4
-          py-3
-          text-sm
-          font-medium
-          hover:bg-gray-100
-        "
-              onClick={() => {
-                const user = users.find((u) => u._id === openMenu);
-                if (!user) return;
-
-                setSelectedUser(null);
-                setEditingUser(user);
-                setOpenMenu(null);
-              }}
-            >
-              <Pencil size={16} />
-              Edit User
-            </button>
-
-            <button
-              className="
-          mx-2
-          mt-1
-          mb-2
-          flex
-          w-[calc(100%-16px)]
-          items-center
-          gap-3
-          rounded-xl
-          px-4
-          py-3
-          text-sm
-          font-medium
-          text-red-600
-          hover:bg-red-50
-        "
-              onClick={() => {
-                const user = users.find((u) => u._id === openMenu);
-                if (!user) return;
-
-                setSelectedUser(null);
-                setDeletingUser(user);
-                setOpenMenu(null);
-              }}
-            >
-              <Trash2 size={16} />
-              Delete User
-            </button>
-          </div>
-        </div>
-      )}
 
       <UserDetails
         user={selectedUser}
