@@ -115,6 +115,36 @@
   box-sizing: border-box;
 }
 
+/* Width */
+.simplebar-track.simplebar-vertical {
+  width: 8px;
+  background: #eef2f7;
+  border-radius: 999px;
+  right: 2px;
+}
+
+/* Thumb */
+.simplebar-scrollbar::before {
+  content: "";
+  background: #bfc6cf !important;
+  border-radius: 999px;
+  opacity: 1 !important;
+  left: 2px;
+  right: 2px;
+  top: 2px;
+  bottom: 2px;
+}
+
+/* Hover */
+.simplebar-scrollbar:hover::before {
+  background: #9ca3af !important;
+}
+
+/* Active */
+.simplebar-scrollbar.simplebar-visible::before {
+  opacity: 1 !important;
+}
+
 body {
   margin: 0;
   min-width: 320px;
