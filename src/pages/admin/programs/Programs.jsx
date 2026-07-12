@@ -172,14 +172,23 @@ const Programs = () => {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate("/dashboard/programs/create")}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--stratex-blue)] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[var(--stratex-blue-dark)]"
-          >
-            <Plus size={17} />
-            Add New Program
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard/programs/bulk")}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--border-light)] bg-white px-4 text-sm font-bold text-[var(--university-ink)] shadow-sm transition hover:bg-[var(--surface-hover)]"
+            >
+              Bulk Upload
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard/programs/create")}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--stratex-blue)] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[var(--stratex-blue-dark)]"
+            >
+              <Plus size={17} />
+              Add New Program
+            </button>
+          </div>
         </header>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -17,6 +17,7 @@ import {
 } from "../../config/notificationConfig";
 import NotificationAvatar from "./notifications/NotificationAvatar";
 import { useAuth } from "../../context/AuthContext";
+import useSocketListener from "../../hooks/useSocketListener";
 
 const getFullName = (user) =>
   user?.fullName ||
@@ -72,8 +73,33 @@ const Navbar = () => {
     }
   };
 
+  useSocketListener();
+
   useEffect(() => {
     loadNotificationPreview();
+  }, []);
+
+  useEffect(() => {
+    const handleRealtime = (e) => {
+      try {
+        const payload = e.detail || e;
+        const newNotification = payload.notification;
+        if (!newNotification) return;
+
+        setNotifications((current) => [
+          { notification: newNotification, deliveredAt: payload.deliveredAt, _id: newNotification._id },
+          ...current,
+        ]);
+        setUnreadCount((count) => count + 1);
+      } catch (err) {
+        console.error("Navbar realtime notification handler", err);
+      }
+    };
+
+    window.addEventListener("socket:notification", handleRealtime);
+    return () => {
+      window.removeEventListener("socket:notification", handleRealtime);
+    };
   }, []);
 
   useEffect(() => {

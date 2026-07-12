@@ -205,14 +205,23 @@ const Schools = () => {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate("/dashboard/schools/create")}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--stratex-blue)] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[var(--stratex-blue-dark)]"
-          >
-            <Plus size={17} />
-            Add School
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard/schools/bulk")}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--border-light)] bg-white px-4 text-sm font-bold text-[var(--university-ink)] shadow-sm transition hover:bg-[var(--surface-hover)]"
+            >
+              Bulk Upload
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard/schools/create")}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--stratex-blue)] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[var(--stratex-blue-dark)]"
+            >
+              <Plus size={17} />
+              Add School
+            </button>
+          </div>
         </header>
 
         <SchoolStatCard {...stats} />

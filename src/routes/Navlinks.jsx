@@ -12,13 +12,16 @@ import Users from "../pages/admin/users/Users";
 import CreateUser from "../pages/admin/users/CreateUser";
 import Schools from "../pages/admin/schools/Schools";
 import CreateSchool from "../pages/admin/schools/CreateSchool";
+import BulkSchools from "../pages/admin/schools/BulkSchools";
 import EditSchool from "../pages/admin/schools/EditSchool";
 import SchoolView from "../pages/admin/schools/SchoolView";
 import Programs from "../pages/admin/programs/Programs";
 import CreateProgram from "../pages/admin/programs/CreateProgram";
+import BulkPrograms from "../pages/admin/programs/BulkPrograms";
 import ProgramView from "../pages/admin/programs/ProgramView";
 import Subjects from "../pages/admin/subjects/Subjects";
 import CreateSubject from "../pages/admin/subjects/CreateSubject";
+import BulkSubjects from "../pages/admin/subjects/BulkSubjects";
 import SubjectView from "../pages/admin/subjects/SubjectView";
 import Notification from "../components/dashboard/Notifications";
 import NotificationDetail from "../components/dashboard/NotificationDetail";
@@ -91,6 +94,14 @@ const Navlinks = () => {
           }
         />
         <Route
+          path="schools/bulk"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin"]}>
+              <BulkSchools />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="schools/:id/edit"
           element={
             <ProtectedRoute allowedRoles={["superAdmin"]}>
@@ -116,6 +127,14 @@ const Navlinks = () => {
           }
         />
         <Route
+          path="programs/bulk"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
+              <BulkPrograms />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="programs/:id"
           element={
             <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
@@ -137,6 +156,14 @@ const Navlinks = () => {
           element={
             <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
               <CreateSubject />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="subjects/bulk"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
+              <BulkSubjects />
             </ProtectedRoute>
           }
         />

@@ -261,7 +261,9 @@ const Subjects = () => {
               </div>
               <SubjectToolbar
                 canAdd={canAddSubject}
+                canBulk={canAddSubject}
                 onAdd={() => navigate("/dashboard/subjects/create")}
+                onBulk={() => navigate("/dashboard/subjects/bulk")}
                 search={search}
                 onSearch={setSearch}
               />

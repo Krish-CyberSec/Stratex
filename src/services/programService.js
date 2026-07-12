@@ -14,3 +14,8 @@ export const updateProgram = (id, data) =>
 
 export const deleteProgram = (id) =>
   axiosInstance.delete(`/programs/${id}`);
+
+export const uploadProgramsCsv = (data) =>
+  axiosInstance.post("/programs/bulk", data, {
+    headers: data instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined,
+  });
