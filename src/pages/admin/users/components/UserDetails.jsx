@@ -1,4 +1,16 @@
 import { Pencil, Trash2, X } from "lucide-react";
+
+const getUserEmail = (user) =>
+  user?.personalEmail || user?.email || user?.universityAccount?.universityEmail || "--";
+
+const getUserRoles = (user) => {
+  const roles = user?.roles?.length ? user.roles : user?.role ? [user.role] : [];
+  return roles.length ? roles.join(", ") : "--";
+};
+
+const getUserSchool = (user) =>
+  typeof user?.schoolId === "object" ? user.schoolId?.name : user?.school || "--";
+
 const UserDetails = ({ user, onClose, onEdit, onDelete }) => {
   if (!user) return null;
 
@@ -38,7 +50,7 @@ const UserDetails = ({ user, onClose, onEdit, onDelete }) => {
             Email
           </p>
           <p className="mt-1 text-sm font-semibold text-[var(--university-ink)]">
-            {user.email}
+            {getUserEmail(user)}
           </p>
         </div>
 
@@ -47,7 +59,7 @@ const UserDetails = ({ user, onClose, onEdit, onDelete }) => {
             Role
           </p>
           <p className="mt-2 inline-flex rounded-full bg-[color-mix(in_srgb,var(--university-blue)_9%,white)] px-2.5 py-1 text-xs font-semibold text-[var(--university-blue-dark)]">
-            {user.role}
+            {getUserRoles(user)}
           </p>
         </div>
 
@@ -56,7 +68,7 @@ const UserDetails = ({ user, onClose, onEdit, onDelete }) => {
             School
           </p>
           <p className="mt-1 text-sm font-semibold text-[var(--university-ink)]">
-            {user.school}
+            {getUserSchool(user)}
           </p>
         </div>
 

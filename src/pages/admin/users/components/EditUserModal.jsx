@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Save, X } from "lucide-react";
 
-const EditUserModal = ({ user, onClose, onSave }) => {
+const EditUserModal = ({ error = "", loading = false, user, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -12,10 +12,10 @@ const EditUserModal = ({ user, onClose, onSave }) => {
   useEffect(() => {
     if (user) {
       setFormData({
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        status: user.status,
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        role: user.roles?.[0] || user.role || "student",
+        status: user.status || "active",
       });
     }
   }, [user]);
@@ -48,6 +48,7 @@ const EditUserModal = ({ user, onClose, onSave }) => {
           <button
             type="button"
             onClick={onClose}
+            disabled={loading}
             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--university-border)] text-[var(--university-blue-dark)] transition hover:bg-[var(--university-surface-soft)]"
           >
             <X size={16} />
@@ -55,6 +56,11 @@ const EditUserModal = ({ user, onClose, onSave }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 p-5">
+          {error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-[var(--error)]">
+              {error}
+            </div>
+          ) : null}
           <div>
             <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-[var(--university-muted)]">
               First Name
@@ -107,6 +113,7 @@ const EditUserModal = ({ user, onClose, onSave }) => {
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
+              <option value="suspended">Suspended</option>
             </select>
           </div>
 
@@ -114,6 +121,7 @@ const EditUserModal = ({ user, onClose, onSave }) => {
             <button
               type="button"
               onClick={onClose}
+              disabled={loading}
               className="rounded-xl border border-[var(--university-border)] bg-white px-5 py-2.5 text-sm font-semibold text-[var(--university-blue-dark)] transition hover:bg-[var(--university-surface-soft)]"
             >
               Cancel
@@ -121,9 +129,11 @@ const EditUserModal = ({ user, onClose, onSave }) => {
 
             <button
               type="submit"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--university-blue)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--university-blue-dark)]"
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--university-blue)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--university-blue-dark)] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Save Changes
+              <Save size={17} />
+              {loading ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </form>

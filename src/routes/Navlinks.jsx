@@ -23,6 +23,7 @@ import Subjects from "../pages/admin/subjects/Subjects";
 import CreateSubject from "../pages/admin/subjects/CreateSubject";
 import BulkSubjects from "../pages/admin/subjects/BulkSubjects";
 import SubjectView from "../pages/admin/subjects/SubjectView";
+import Specializations from "../pages/admin/specializations/Specializations";
 import Notification from "../components/dashboard/Notifications";
 import NotificationDetail from "../components/dashboard/NotificationDetail";
 import Notices from "../pages/admin/notices/Notices";
@@ -182,6 +183,15 @@ const Navlinks = () => {
           element={
             <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin", "faculty", "coordinator", "student"]}>
               <Subjects />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="specializations"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
+              <Specializations />
             </ProtectedRoute>
           }
         />

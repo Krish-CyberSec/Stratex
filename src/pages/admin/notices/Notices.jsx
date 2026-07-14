@@ -2,7 +2,7 @@ import { Bell } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
-import { clearNotice, createNotice, deleteNotice, getNotices, updateNotice } from "../../../services/noticeService";
+import { clearNotice, deleteNotice, getNotices } from "../../../services/noticeService";
 import { getUsers } from "../../../services/userService";
 import DeleteNoticeModal from "./components/DeleteNoticeModal";
 import NoticeList from "./components/NoticeList";
@@ -149,35 +149,6 @@ const Notices = () => {
       return acc;
     }, {});
   }, [notices]);
-
-  const handleSave = async (payload) => {
-    setModalLoading(true);
-    setModalError("");
-
-    try {
-      const data = new FormData();
-      data.append("title", payload.title);
-      data.append("content", payload.content);
-      data.append("category", payload.category || "general");
-      data.append("audience", JSON.stringify(payload.audience));
-      data.append("status", payload.status);
-      if (payload.publishedAt) data.append("publishedAt", payload.publishedAt);
-      if (payload.attachment) data.append("attachment", payload.attachment);
-
-      if (editingNotice) {
-        await updateNotice(editingNotice._id, data);
-      } else {
-        await createNotice(data);
-      }
-      setFormOpen(false);
-      setEditingNotice(null);
-      await loadNotices();
-    } catch (err) {
-      setModalError(getErrorMessage(err, "Unable to save notice"));
-    } finally {
-      setModalLoading(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!deletingNotice) return;

@@ -4,49 +4,59 @@ import EditUserModal from "./components/EditUserModal";
 import DeleteUserModal from "./components/DeleteUserModal";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Eye, Pencil, Plus, Search, Trash2, UsersRound } from "lucide-react";
+import { deleteUser, getUsers, updateUser } from "../../../services/userService";
 
-const mockUsers = [
-  {
-    _id: 1,
-    firstName: "John",
-    lastName: "Doe",
-    email: "john@test.com",
-    role: "Student",
-    school: "School of Engineering & Technology",
-    status: "active",
-  },
-  {
-    _id: 2,
-    firstName: "Aarav",
-    lastName: "Mehta",
-    email: "aarav@test.com",
-    role: "Faculty",
-    school: "School of Management",
-    status: "active",
-  },
-  {
-    _id: 3,
-    firstName: "Priya",
-    lastName: "Sharma",
-    email: "priya@test.com",
-    role: "School Admin",
-    school: "School of Law",
-    status: "inactive",
-  },
-];
+const getList = (response) => response?.data?.data || [];
+const getErrorMessage = (error, fallback) =>
+  error?.response?.data?.message || error?.response?.data?.errors?.[0] || error?.message || fallback;
 
 const getInitials = (firstName, lastName) => {
   return `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase();
 };
 
+const getUserEmail = (user) =>
+  user?.personalEmail || user?.email || user?.universityAccount?.universityEmail || "--";
+
+const getUserRoles = (user) => {
+  const roles = user?.roles?.length ? user.roles : user?.role ? [user.role] : [];
+  return roles.length ? roles.join(", ") : "--";
+};
+
+const getUserSchool = (user) =>
+  typeof user?.schoolId === "object" ? user.schoolId?.name : user?.school || "--";
+
 const Users = () => {
-  const [users, setUsers] = useState(mockUsers);
+  const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [modalError, setModalError] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const response = await getUsers({ page: 1, limit: 200, sortBy: "createdAt", order: "desc" });
+        setUsers(getList(response));
+      } catch (err) {
+        setError(getErrorMessage(err, "Unable to load users"));
+        setUsers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUsers();
+  }, []);
+
   useEffect(() => {
     const newUser = location.state?.newUser;
 
@@ -64,31 +74,63 @@ const Users = () => {
 
     navigate(location.pathname, { replace: true });
   }, [location.state, location.pathname, navigate]);
-  const handleUpdateUser = (updatedUser) => {
-    setUsers((prevUsers) =>
-      prevUsers.map((user) =>
-        user._id === updatedUser._id ? updatedUser : user,
-      ),
-    );
 
-    setEditingUser(null);
+  const handleUpdateUser = async (updatedUser) => {
+    if (!updatedUser?._id) return;
 
-    if (selectedUser?._id === updatedUser._id) {
-      setSelectedUser(updatedUser);
+    setActionLoading(true);
+    setModalError("");
+
+    try {
+      const response = await updateUser(updatedUser._id, {
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        role: updatedUser.role,
+        status: updatedUser.status,
+      });
+      const savedUser = response?.data?.user || response?.data?.data || updatedUser;
+
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user._id === savedUser._id ? savedUser : user,
+        ),
+      );
+
+      setEditingUser(null);
+
+      if (selectedUser?._id === savedUser._id) {
+        setSelectedUser(savedUser);
+      }
+    } catch (err) {
+      setModalError(getErrorMessage(err, "Unable to update user"));
+    } finally {
+      setActionLoading(false);
     }
   };
-  const handleDeleteUser = (userId) => {
-    setUsers((prevUsers) => prevUsers.filter((user) => user._id !== userId));
-    setDeletingUser(null);
 
-    if (selectedUser?._id === userId) {
-      setSelectedUser(null);
+  const handleDeleteUser = async (userId) => {
+    setActionLoading(true);
+    setModalError("");
+
+    try {
+      await deleteUser(userId);
+      setUsers((prevUsers) => prevUsers.filter((user) => user._id !== userId));
+      setDeletingUser(null);
+
+      if (selectedUser?._id === userId) {
+        setSelectedUser(null);
+      }
+    } catch (err) {
+      setModalError(getErrorMessage(err, "Unable to delete user"));
+    } finally {
+      setActionLoading(false);
     }
   };
+
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
       const value =
-        `${user.firstName} ${user.lastName} ${user.email} ${user.role} ${user.status}`.toLowerCase();
+        `${user.firstName} ${user.lastName} ${getUserEmail(user)} ${getUserRoles(user)} ${user.status}`.toLowerCase();
       return value.includes(searchTerm.toLowerCase());
     });
   }, [users, searchTerm]);
@@ -160,6 +202,11 @@ const Users = () => {
           </div>
 
           <div className="overflow-x-auto">
+            {error ? (
+              <div className="border-b border-red-100 bg-red-50 px-5 py-3 text-sm font-semibold text-[var(--error)]">
+                {error}
+              </div>
+            ) : null}
             <table className="w-full min-w-[760px] border-collapse text-left">
               <thead>
                 <tr className="border-b border-[var(--university-border)] bg-[var(--university-surface-soft)]">
@@ -182,7 +229,13 @@ const Users = () => {
               </thead>
 
               <tbody>
-                {filteredUsers.map((user) => (
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="px-5 py-12 text-center text-sm font-semibold text-[var(--university-muted)]">
+                      Loading users...
+                    </td>
+                  </tr>
+                ) : filteredUsers.map((user) => (
                   <tr
                     key={user._id}
                     className="border-b border-[var(--university-border)] transition hover:bg-[var(--university-surface-soft)]"
@@ -198,16 +251,16 @@ const Users = () => {
                             {user.firstName} {user.lastName}
                           </p>
                           <p className="mt-0.5 text-xs font-medium text-[var(--university-muted)]">
-                            {user.school}
+                            {getUserSchool(user)}
                           </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-5 py-4 text-sm text-[var(--university-muted)]">
-                      {user.email}
+                      {getUserEmail(user)}
                     </td>
                     <td className="px-5 py-4 text-sm text-[var(--university-muted)]">
-                      {user.role}
+                      {getUserRoles(user)}
                     </td>
                     <td className="px-5 py-4">
                       <span
@@ -253,7 +306,7 @@ const Users = () => {
                   </tr>
                 ))}
 
-                {filteredUsers.length === 0 && (
+                {!loading && filteredUsers.length === 0 && (
                   <tr>
                     <td colSpan="5" className="px-5 py-12 text-center">
                       <div className="mx-auto flex max-w-sm flex-col items-center">
@@ -286,13 +339,23 @@ const Users = () => {
       />
 
       <EditUserModal
+        error={modalError}
+        loading={actionLoading}
         user={editingUser}
-        onClose={() => setEditingUser(null)}
+        onClose={() => {
+          setModalError("");
+          setEditingUser(null);
+        }}
         onSave={handleUpdateUser}
       />
       <DeleteUserModal
+        error={modalError}
+        loading={actionLoading}
         user={deletingUser}
-        onClose={() => setDeletingUser(null)}
+        onClose={() => {
+          setModalError("");
+          setDeletingUser(null);
+        }}
         onDelete={handleDeleteUser}
       />
     </div>

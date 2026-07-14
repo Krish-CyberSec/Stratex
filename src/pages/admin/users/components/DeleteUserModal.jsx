@@ -1,5 +1,5 @@
 import { Trash2, X } from "lucide-react";
-const DeleteUserModal = ({ user, onClose, onDelete }) => {
+const DeleteUserModal = ({ error = "", loading = false, user, onClose, onDelete }) => {
   if (!user) return null;
 
   const handleDelete = () => {
@@ -28,6 +28,7 @@ const DeleteUserModal = ({ user, onClose, onDelete }) => {
           <button
             type="button"
             onClick={onClose}
+            disabled={loading}
             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-white text-[var(--error)] transition hover:bg-red-100"
           >
             <X size={16} />
@@ -35,6 +36,11 @@ const DeleteUserModal = ({ user, onClose, onDelete }) => {
         </div>
 
         <div className="p-5">
+          {error ? (
+            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-[var(--error)]">
+              {error}
+            </div>
+          ) : null}
           <p className="text-sm leading-6 text-[var(--university-muted)]">
             Are you sure you want to delete{" "}
             <span className="font-semibold text-[var(--university-ink)]">
@@ -47,6 +53,7 @@ const DeleteUserModal = ({ user, onClose, onDelete }) => {
             <button
               type="button"
               onClick={onClose}
+              disabled={loading}
               className="rounded-xl border border-[var(--university-border)] bg-white px-5 py-2.5 text-sm font-semibold text-[var(--university-blue-dark)] transition hover:bg-[var(--university-surface-soft)]"
             >
               Cancel
@@ -55,10 +62,11 @@ const DeleteUserModal = ({ user, onClose, onDelete }) => {
             <button
               type="button"
               onClick={handleDelete}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--error)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--error)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Trash2 size={17} />
-              Delete
+              {loading ? "Deleting..." : "Delete"}
             </button>
           </div>
         </div>
