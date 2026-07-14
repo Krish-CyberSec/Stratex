@@ -29,6 +29,7 @@ import Notices from "../pages/admin/notices/Notices";
 import CreateNotice from "../pages/admin/notices/CreateNotice";
 import NoticeView from "../pages/admin/notices/NoticeView";
 import Events from "../pages/admin/events/Events";
+import EventView from "../pages/admin/events/EventView";
 import Profile from "../pages/profile/Profile";
 
 const Navlinks = () => {
@@ -197,6 +198,7 @@ const Navlinks = () => {
         />
         <Route path="notices/:id" element={<NoticeView />} />
         <Route path="notices" element={<Notices />} />
+        <Route path="events/:id" element={<EventView />} />
         <Route path="events" element={<Events />} />
         <Route path="profile" element={<Profile />} />
       </Route>

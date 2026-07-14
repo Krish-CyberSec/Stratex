@@ -11,9 +11,20 @@ const audienceOptions = [
   { label: "Exam Cell", value: "examCell" },
 ];
 
+const noticeCategories = [
+  { label: "Academic", value: "academic" },
+  { label: "Examinations", value: "examinations" },
+  { label: "Events", value: "events" },
+  { label: "General", value: "general" },
+  { label: "Holidays", value: "holidays" },
+  { label: "Administrative", value: "administrative" },
+  { label: "Urgent", value: "urgent" },
+];
+
 const getInitialForm = (notice) => ({
   title: notice?.title || "",
   content: notice?.content || "",
+  category: notice?.category || "general",
   audience: notice?.audience?.length ? notice.audience : ["all"],
   status: notice?.status || "published",
   publishedAt: notice?.publishedAt ? new Date(notice.publishedAt).toISOString().slice(0, 16) : "",
@@ -54,6 +65,7 @@ const NoticeFormModal = ({ error, loading, notice, onClose, onSubmit, open }) =>
     onSubmit({
       title: form.title.trim(),
       content: form.content.trim(),
+      category: form.category,
       audience: form.audience,
       status: form.status,
       attachment: form.attachment,
@@ -87,6 +99,15 @@ const NoticeFormModal = ({ error, loading, notice, onClose, onSubmit, open }) =>
           <label className="block">
             <span className="mb-2 block text-xs font-bold text-[var(--university-ink)]">Content *</span>
             <textarea value={form.content} onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))} className="min-h-32 w-full resize-y rounded-lg border border-[var(--border)] px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--stratex-blue)]" placeholder="Write notice details..." />
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-xs font-bold text-[var(--university-ink)]">Category</span>
+            <select value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))} className="h-11 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-semibold outline-none focus:border-[var(--stratex-blue)]">
+              {noticeCategories.map((category) => (
+                <option key={category.value} value={category.value}>{category.label}</option>
+              ))}
+            </select>
           </label>
 
           <div className="grid gap-4 sm:grid-cols-2">

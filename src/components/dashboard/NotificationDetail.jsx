@@ -14,6 +14,7 @@ import {
   getAudienceLabel,
   getNotificationDocument,
   getNotificationId,
+  getNotificationTargetPath,
   getSenderName,
 } from "../../config/notificationConfig";
 
@@ -216,6 +217,17 @@ const NotificationDetail = () => {
 
     markNotificationRead(id).catch(() => {});
   }, [id]);
+
+  useEffect(() => {
+    if (!item) {
+      return;
+    }
+
+    const targetPath = getNotificationTargetPath(item);
+    if (targetPath) {
+      navigate(targetPath, { replace: true });
+    }
+  }, [item, navigate]);
 
   const notification = getNotificationDocument(item);
   const attachments = getNotificationAttachments(notification);

@@ -1,7 +1,7 @@
 import { RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getNoticeById } from "../../../services/noticeService";
+import { getNoticeById, markNoticeRead } from "../../../services/noticeService";
 import NoticeAttachmentCard from "./components/detail/NoticeAttachmentCard";
 import NoticeContentCard from "./components/detail/NoticeContentCard";
 import NoticeDetailHeader from "./components/detail/NoticeDetailHeader";
@@ -39,7 +39,17 @@ const NoticeView = () => {
 
     try {
       const response = await getNoticeById(id);
-      setNotice(getPayload(response));
+      const fetchedNotice = getPayload(response);
+      setNotice(fetchedNotice);
+
+      if (fetchedNotice?._id && !fetchedNotice.isRead) {
+        try {
+          const readResponse = await markNoticeRead(fetchedNotice._id);
+          setNotice(getPayload(readResponse));
+        } catch {
+          setNotice({ ...fetchedNotice, isRead: true });
+        }
+      }
     } catch (err) {
       setError(getErrorMessage(err, "Unable to load notice details"));
       setNotice(null);
