@@ -10,7 +10,7 @@ const SubjectProgramSelector = ({ locked = false, programs, selectedProgramId, o
   const isAllPrograms = !selectedProgramId;
 
   return (
-    <label className="relative block w-full lg:max-w-[430px]">
+    <label className="relative block w-full min-w-0 lg:max-w-[430px]">
       <span className="mb-2 block text-xs font-black uppercase text-[var(--stratex-blue)]">Program Scope</span>
       <div className="relative rounded-xl border border-[var(--border-light)] bg-white p-3 shadow-sm transition focus-within:border-[var(--stratex-blue)] hover:border-[color-mix(in_srgb,var(--stratex-blue)_35%,white)]">
         <div className="pointer-events-none absolute left-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--stratex-blue)_10%,white)] text-[var(--stratex-blue)]">
@@ -36,9 +36,11 @@ const SubjectProgramSelector = ({ locked = false, programs, selectedProgramId, o
         </span>
         <ChevronDown className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-[var(--university-muted)]" size={18} />
       </div>
-      <span className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-[var(--university-muted)]">
+      <span className="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] font-bold text-[var(--university-muted)]">
         <BookOpen size={12} />
-        {locked ? "Locked to your active academic assignment" : "Choose one program or browse all programs"}
+        <span className="min-w-0 truncate">
+          {locked ? "Locked to your active academic assignment" : "Choose one program or browse all programs"}
+        </span>
       </span>
     </label>
   );

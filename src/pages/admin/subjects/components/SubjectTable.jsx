@@ -9,7 +9,7 @@ const getPersonName = (person) => {
 
 const SubjectTable = ({ canManage, loading, onDelete, onView, subjects }) => {
   return (
-  <div className="overflow-hidden rounded-xl border border-[var(--border-light)]">
+  <div className="min-w-0 overflow-hidden rounded-xl border border-[var(--border-light)]">
     <div className="hidden overflow-visible lg:block">
       <table className="min-w-full table-fixed text-left">
         <thead className="bg-[var(--surface-soft)] text-xs font-bold text-[var(--university-muted)]">
@@ -86,26 +86,28 @@ const SubjectTable = ({ canManage, loading, onDelete, onView, subjects }) => {
       </table>
     </div>
 
-    <div className="grid gap-3 bg-white p-4 lg:hidden">
+    <div className="grid min-w-0 gap-3 bg-white p-3 sm:p-4 lg:hidden">
       {loading ? (
         Array.from({ length: 4 }).map((_, index) => (
           <div key={index} className="h-32 animate-pulse rounded-xl bg-[var(--surface-soft)]" />
         ))
       ) : subjects.length ? (
         subjects.map((subject) => (
-          <article key={subject._id} className="rounded-xl border border-[var(--border-light)] bg-white p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
+          <article key={subject._id} className="min-w-0 rounded-xl border border-[var(--border-light)] bg-white p-4 shadow-sm">
+            <div className="flex min-w-0 flex-col gap-3 min-[420px]:flex-row min-[420px]:items-start min-[420px]:justify-between">
               <div className="min-w-0">
-                <p className="text-[11px] font-bold text-[var(--stratex-blue)]">{subject.code}</p>
+                <p className="truncate text-[11px] font-bold text-[var(--stratex-blue)]">{subject.code}</p>
                 <h3 className="mt-1 line-clamp-2 text-sm font-bold text-[var(--university-ink)]">{subject.name}</h3>
               </div>
-              <SubjectStatusBadge status={subject.status} />
+              <div className="shrink-0 self-start">
+                <SubjectStatusBadge status={subject.status} />
+              </div>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <SubjectTypeBadge subject={subject} />
               <span className="rounded-full bg-[var(--surface-soft)] px-2.5 py-1 text-[11px] font-bold text-[var(--university-muted)]">{subject.credits ?? 0} Credits</span>
             </div>
-            <p className="mt-3 truncate text-xs font-semibold text-[var(--university-muted)]">Coordinator: {getPersonName(subject.coordinatorId)}</p>
+            <p className="mt-3 min-w-0 truncate text-xs font-semibold text-[var(--university-muted)]">Coordinator: {getPersonName(subject.coordinatorId)}</p>
             <div className={`mt-4 grid gap-2 ${canManage ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}>
               <button type="button" onClick={() => onView(subject)} className="rounded-lg border border-[var(--stratex-blue)] bg-blue-50 px-3 py-2 text-xs font-bold text-[var(--stratex-blue)]">View Details</button>
               {canManage ? (

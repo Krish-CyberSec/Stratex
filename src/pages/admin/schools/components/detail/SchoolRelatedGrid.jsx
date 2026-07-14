@@ -6,6 +6,7 @@ import {
   UserRound,
   UsersRound,
 } from "lucide-react";
+import Pagination from "../../../../../components/common/Pagination";
 
 const getUserName = (user) =>
   [user?.firstName, user?.middleName, user?.lastName].filter(Boolean).join(" ") ||
@@ -82,7 +83,7 @@ const UserCard = ({ item, roleLabel }) => (
   </article>
 );
 
-const SchoolRelatedGrid = ({ items = [], title, type }) => {
+const SchoolRelatedGrid = ({ items = [], onPageChange, onPageSizeChange, pageSize, pagination, title, type }) => {
   const list = items;
 
   if (!list.length) {
@@ -113,6 +114,20 @@ const SchoolRelatedGrid = ({ items = [], title, type }) => {
           );
         })}
       </div>
+
+      {pagination ? (
+        <Pagination
+          count={list.length}
+          itemLabel={title.toLowerCase()}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+          page={pagination.page}
+          pageSize={pageSize}
+          pageSizeOptions={[6, 9, 12, 24]}
+          total={pagination.total}
+          totalPages={pagination.totalPages}
+        />
+      ) : null}
     </section>
   );
 };

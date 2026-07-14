@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   deleteNotification,
   getNotifications,
@@ -69,7 +69,7 @@ const Notifications = () => {
     return params;
   }, [filters]);
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -88,7 +88,7 @@ const Notifications = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [query]);
 
   useEffect(() => {
     loadNotifications();
@@ -116,7 +116,7 @@ const Notifications = () => {
       window.removeEventListener('socket:notification', handleRealtime);
     };
 
-  }, [query]);
+  }, [loadNotifications]);
 
   const updateFilter = (key, value) => {
     setFilters((current) => ({

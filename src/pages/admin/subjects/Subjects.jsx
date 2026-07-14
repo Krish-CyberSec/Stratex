@@ -1,6 +1,7 @@
 import { BookOpenCheck } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Pagination from "../../../components/common/Pagination";
 import { useAuth } from "../../../context/AuthContext";
 import { getPrograms } from "../../../services/programService";
 import { deleteSubject, getSubjects } from "../../../services/subjectService";
@@ -46,6 +47,8 @@ const Subjects = () => {
   const [activeSemester, setActiveSemester] = useState(1);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("semester");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(true);
   const [modalLoading, setModalLoading] = useState(false);
   const [error, setError] = useState("");
@@ -57,6 +60,7 @@ const Subjects = () => {
   const isSchoolAdmin = roles.includes("schoolAdmin");
   const isFaculty = roles.includes("faculty") || roles.includes("coordinator");
   const isStudent = roles.includes("student");
+  const userId = user?._id;
   const ownSchoolId = getId(user?.schoolId);
   const primaryAssignment = getPrimaryAssignment(user);
   const assignedProgramId = getId(primaryAssignment?.programId);
@@ -105,7 +109,7 @@ const Subjects = () => {
         ...(selectedProgramId ? { programId: selectedProgramId } : {}),
         ...(isSchoolAdmin && ownSchoolId ? { schoolId: ownSchoolId } : {}),
         ...(isStudent && assignedSpecializationId ? { specializationId: assignedSpecializationId } : {}),
-        ...(isFaculty && user?._id ? { facultyId: user._id } : {}),
+        ...(isFaculty && userId ? { facultyId: userId } : {}),
       };
 
       const response = await getSubjects(params);
@@ -116,7 +120,7 @@ const Subjects = () => {
     } finally {
       setLoading(false);
     }
-  }, [assignedSpecializationId, isFaculty, isSchoolAdmin, isStudent, ownSchoolId, selectedProgramId, user?._id]);
+  }, [assignedSpecializationId, isFaculty, isSchoolAdmin, isStudent, ownSchoolId, selectedProgramId, userId]);
 
   useEffect(() => {
     loadPrograms();
@@ -160,6 +164,22 @@ const Subjects = () => {
     });
   }, [activeSemester, activeTab, search, subjects]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [activeSemester, activeTab, search, selectedProgramId]);
+
+  useEffect(() => {
+    const totalPages = Math.max(Math.ceil(visibleSubjects.length / pageSize), 1);
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, pageSize, visibleSubjects.length]);
+
+  const paginatedSubjects = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return visibleSubjects.slice(start, start + pageSize);
+  }, [page, pageSize, visibleSubjects]);
+
   const handleDelete = async () => {
     if (!deletingSubject) return;
     setModalLoading(true);
@@ -179,19 +199,19 @@ const Subjects = () => {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[linear-gradient(135deg,#ffffff_0%,var(--background)_52%,#f5f7ff_100%)] px-3 py-5 sm:px-5 lg:px-7">
       <div className="mx-auto max-w-[1480px] space-y-5">
-        <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <header className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-[var(--university-muted)]">
               <span>My Subjects</span>
               <span>/</span>
               <span className="text-[var(--university-ink)]">Semester {activeSemester}</span>
             </div>
-            <div className="mt-3 flex items-start gap-3">
+            <div className="mt-3 flex min-w-0 items-start gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[var(--stratex-blue)]">
                 <BookOpenCheck size={23} />
               </span>
-              <div>
-                <h1 className="text-3xl font-bold leading-tight text-[var(--text-primary)]">My Subjects</h1>
+              <div className="min-w-0">
+                <h1 className="text-2xl font-bold leading-tight text-[var(--text-primary)] sm:text-3xl">My Subjects</h1>
                 <p className="mt-1 max-w-2xl text-sm font-medium text-[var(--text-secondary)]">
                   View subjects you are enrolled in or manage under the selected program.
                 </p>
@@ -210,8 +230,8 @@ const Subjects = () => {
           />
         </header>
 
-        <section className="rounded-xl border border-[var(--border-light)] bg-white p-4 shadow-sm">
-          <div className="flex gap-6 border-b border-[var(--border-light)]">
+        <section className="min-w-0 rounded-xl border border-[var(--border-light)] bg-white p-3 shadow-sm sm:p-4">
+          <div className="flex min-w-0 gap-6 overflow-x-auto border-b border-[var(--border-light)]">
             {[
               ["semester", "By Semester"],
               ["all", "All Subjects"],
@@ -242,9 +262,9 @@ const Subjects = () => {
             </div>
           ) : null}
 
-          <div className="mt-4 rounded-xl border border-[var(--border-light)] bg-white p-4">
-            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-              <div>
+          <div className="mt-4 min-w-0 rounded-xl border border-[var(--border-light)] bg-white p-3 sm:p-4">
+            <div className="mb-4 flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-sm font-bold text-[var(--university-ink)]">
                     {activeTab === "semester" ? `Semester ${activeSemester} Subjects` : "All Subjects"}
@@ -283,8 +303,25 @@ const Subjects = () => {
                 setDeletingSubject(subject);
               }}
               onView={(subject) => navigate(`/dashboard/subjects/${subject._id}`)}
-              subjects={visibleSubjects}
+              subjects={paginatedSubjects}
             />
+
+            {!loading ? (
+              <Pagination
+                className="mt-4"
+                count={paginatedSubjects.length}
+                itemLabel="subjects"
+                onPageChange={(value) => setPage(value)}
+                onPageSizeChange={(value) => {
+                  setPageSize(value);
+                  setPage(1);
+                }}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 20, 50]}
+                total={visibleSubjects.length}
+              />
+            ) : null}
 
             <div className="mt-4 rounded-xl bg-[color-mix(in_srgb,var(--stratex-blue)_6%,white)] px-4 py-3 text-xs font-semibold leading-5 text-[var(--stratex-blue)]">
               Core subjects are program specific, while common subjects can be shared across programs.

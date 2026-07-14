@@ -84,6 +84,8 @@ const ProgramView = () => {
   const [selectedSemester, setSelectedSemester] = useState(1);
   const [activeTab, setActiveTab] = useState("Semesters");
   const [subjectSearch, setSubjectSearch] = useState("");
+  const [subjectPage, setSubjectPage] = useState(1);
+  const [subjectPageSize, setSubjectPageSize] = useState(8);
   const [loading, setLoading] = useState(true);
   const [subjectsLoading, setSubjectsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -169,10 +171,26 @@ const ProgramView = () => {
     });
   }, [selectedSemester, subjectSearch, subjects]);
 
+  useEffect(() => {
+    setSubjectPage(1);
+  }, [selectedSemester, subjectSearch]);
+
+  useEffect(() => {
+    const totalPages = Math.max(Math.ceil(visibleSubjects.length / subjectPageSize), 1);
+    if (subjectPage > totalPages) {
+      setSubjectPage(totalPages);
+    }
+  }, [subjectPage, subjectPageSize, visibleSubjects.length]);
+
+  const paginatedSubjects = useMemo(() => {
+    const start = (subjectPage - 1) * subjectPageSize;
+    return visibleSubjects.slice(start, start + subjectPageSize);
+  }, [subjectPage, subjectPageSize, visibleSubjects]);
+
   const editSchools = useMemo(() => {
     if (schools.length) return schools;
     return program?.schoolId ? [program.schoolId] : [];
-  }, [program?.schoolId, schools]);
+  }, [program, schools]);
 
   const canSave = useMemo(
     () => editForm.name.trim().length >= 2 && editForm.schoolId && Number(editForm.duration) >= 1 && !saving,
@@ -292,10 +310,18 @@ const ProgramView = () => {
                 />
                 <ProgramSubjectTable
                   loading={subjectsLoading}
+                  onPageChange={setSubjectPage}
+                  onPageSizeChange={(value) => {
+                    setSubjectPageSize(value);
+                    setSubjectPage(1);
+                  }}
                   onSearch={setSubjectSearch}
+                  page={subjectPage}
+                  pageSize={subjectPageSize}
                   search={subjectSearch}
                   selectedSemester={selectedSemester}
-                  subjects={visibleSubjects}
+                  subjects={paginatedSubjects}
+                  totalSubjects={visibleSubjects.length}
                 />
               </>
             ) : null}
@@ -303,10 +329,18 @@ const ProgramView = () => {
             {activeTab === "Subjects Overview" ? (
               <ProgramSubjectTable
                 loading={subjectsLoading}
+                onPageChange={setSubjectPage}
+                onPageSizeChange={(value) => {
+                  setSubjectPageSize(value);
+                  setSubjectPage(1);
+                }}
                 onSearch={setSubjectSearch}
+                page={subjectPage}
+                pageSize={subjectPageSize}
                 search={subjectSearch}
                 selectedSemester={selectedSemester}
-                subjects={visibleSubjects}
+                subjects={paginatedSubjects}
+                totalSubjects={visibleSubjects.length}
               />
             ) : null}
 

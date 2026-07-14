@@ -1,15 +1,27 @@
 import { Search } from "lucide-react";
+import Pagination from "../../../../../components/common/Pagination";
 import ProgramStatusBadge from "../ProgramStatusBadge";
 import { getPersonName, getSubjectType } from "./programDetailUtils";
 
-const ProgramSubjectTable = ({ loading, search, selectedSemester, subjects, onSearch }) => (
+const ProgramSubjectTable = ({
+  loading,
+  onPageChange,
+  onPageSizeChange,
+  onSearch,
+  page,
+  pageSize,
+  search,
+  selectedSemester,
+  subjects,
+  totalSubjects,
+}) => (
   <section className="rounded-xl border border-[var(--border-light)] bg-white shadow-sm">
     <div className="flex flex-col gap-3 border-b border-[var(--border-light)] px-4 py-4 lg:flex-row lg:items-start lg:justify-between">
       <div>
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="text-sm font-bold text-[var(--university-ink)]">Semester {selectedSemester} Subjects</h2>
           <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-[var(--stratex-blue)]">
-            {subjects.length} Subjects
+            {totalSubjects ?? subjects.length} Subjects
           </span>
         </div>
         <p className="mt-1 text-xs font-medium text-[var(--university-muted)]">Subjects offered in this semester.</p>
@@ -106,6 +118,21 @@ const ProgramSubjectTable = ({ loading, search, selectedSemester, subjects, onSe
         </div>
       )}
     </div>
+
+    {!loading && totalSubjects ? (
+      <div className="border-t border-[var(--border-light)] px-4 py-4">
+        <Pagination
+          count={subjects.length}
+          itemLabel="subjects"
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+          page={page}
+          pageSize={pageSize}
+          pageSizeOptions={[8, 12, 16, 24]}
+          total={totalSubjects}
+        />
+      </div>
+    ) : null}
   </section>
 );
 

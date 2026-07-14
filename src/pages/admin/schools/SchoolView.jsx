@@ -18,6 +18,20 @@ const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.message || fallback;
 
 const getPayload = (response) => response.data?.data || response.data?.school || response.data;
+const getPagination = (response, fallbackCount = 0, page = 1, limit = 6) =>
+  response.data?.pagination || {
+    page,
+    limit,
+    total: fallbackCount,
+    totalPages: Math.max(Math.ceil(fallbackCount / limit), 1),
+  };
+
+const initialRelatedFilters = {
+  programs: { page: 1, limit: 6 },
+  faculty: { page: 1, limit: 6 },
+  students: { page: 1, limit: 6 },
+  coordinators: { page: 1, limit: 6 },
+};
 
 const SchoolView = () => {
   const { id } = useParams();
@@ -35,6 +49,13 @@ const SchoolView = () => {
     students: [],
     coordinators: [],
   });
+  const [relatedPagination, setRelatedPagination] = useState({
+    programs: null,
+    faculty: null,
+    students: null,
+    coordinators: null,
+  });
+  const [relatedFilters, setRelatedFilters] = useState(initialRelatedFilters);
   const [schoolAdmin, setSchoolAdmin] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
@@ -57,27 +78,36 @@ const SchoolView = () => {
         headResponse,
       ] = await Promise.all([
         getSchoolById(id),
-        getPrograms({ page: 1, limit: 50, schoolId: id, sortBy: "name", order: "asc" }),
-        getUsers({ page: 1, limit: 50, schoolId: id, role: "faculty", sortBy: "firstName", order: "asc" }),
-        getUsers({ page: 1, limit: 50, schoolId: id, role: "student", sortBy: "firstName", order: "asc" }),
-        getUsers({ page: 1, limit: 50, schoolId: id, role: "coordinator", sortBy: "firstName", order: "asc" }),
+        getPrograms({ ...relatedFilters.programs, schoolId: id, sortBy: "name", order: "asc" }),
+        getUsers({ ...relatedFilters.faculty, schoolId: id, role: "faculty", sortBy: "firstName", order: "asc" }),
+        getUsers({ ...relatedFilters.students, schoolId: id, role: "student", sortBy: "firstName", order: "asc" }),
+        getUsers({ ...relatedFilters.coordinators, schoolId: id, role: "coordinator", sortBy: "firstName", order: "asc" }),
         getUsers({ page: 1, limit: 1, schoolId: id, role: "schoolAdmin" }),
       ]);
 
       const schoolPayload = getPayload(schoolResponse);
-      setSchool(schoolPayload);
-      setCounts({
-        programs: programsResponse.data?.pagination?.total ?? 0,
-        faculty: facultyResponse.data?.pagination?.total ?? 0,
-        students: studentsResponse.data?.pagination?.total ?? 0,
-        coordinators: coordinatorsResponse.data?.pagination?.total ?? 0,
-      });
-      setRelated({
+      const nextRelated = {
         programs: programsResponse.data?.data || [],
         faculty: facultyResponse.data?.data || [],
         students: studentsResponse.data?.data || [],
         coordinators: coordinatorsResponse.data?.data || [],
+      };
+      const nextPagination = {
+        programs: getPagination(programsResponse, nextRelated.programs.length, relatedFilters.programs.page, relatedFilters.programs.limit),
+        faculty: getPagination(facultyResponse, nextRelated.faculty.length, relatedFilters.faculty.page, relatedFilters.faculty.limit),
+        students: getPagination(studentsResponse, nextRelated.students.length, relatedFilters.students.page, relatedFilters.students.limit),
+        coordinators: getPagination(coordinatorsResponse, nextRelated.coordinators.length, relatedFilters.coordinators.page, relatedFilters.coordinators.limit),
+      };
+
+      setSchool(schoolPayload);
+      setCounts({
+        programs: nextPagination.programs.total ?? 0,
+        faculty: nextPagination.faculty.total ?? 0,
+        students: nextPagination.students.total ?? 0,
+        coordinators: nextPagination.coordinators.total ?? 0,
       });
+      setRelated(nextRelated);
+      setRelatedPagination(nextPagination);
       setSchoolAdmin(headResponse.data?.data?.[0] || null);
     } catch (err) {
       setError(getErrorMessage(err, "Unable to load school details"));
@@ -85,7 +115,7 @@ const SchoolView = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, relatedFilters]);
 
   useEffect(() => {
     loadSchool();
@@ -113,45 +143,43 @@ const SchoolView = () => {
     setActiveTab(target);
   };
 
+  const updateRelatedFilter = (type, changes) => {
+    setRelatedFilters((current) => ({
+      ...current,
+      [type]: {
+        ...current[type],
+        ...changes,
+      },
+    }));
+  };
+
+  const renderRelatedGrid = (type, title) => (
+    <SchoolRelatedGrid
+      items={related[type]}
+      onPageChange={(page) => updateRelatedFilter(type, { page })}
+      onPageSizeChange={(limit) => updateRelatedFilter(type, { limit, page: 1 })}
+      pageSize={relatedFilters[type].limit}
+      pagination={relatedPagination[type]}
+      title={title}
+      type={type}
+    />
+  );
+
   const renderTabContent = () => {
     if (activeTab === "programs") {
-      return (
-        <SchoolRelatedGrid
-          items={related.programs}
-          title="Programs"
-          type="programs"
-        />
-      );
+      return renderRelatedGrid("programs", "Programs");
     }
 
     if (activeTab === "faculty") {
-      return (
-        <SchoolRelatedGrid
-          items={related.faculty}
-          title="Faculty"
-          type="faculty"
-        />
-      );
+      return renderRelatedGrid("faculty", "Faculty");
     }
 
     if (activeTab === "students") {
-      return (
-        <SchoolRelatedGrid
-          items={related.students}
-          title="Students"
-          type="students"
-        />
-      );
+      return renderRelatedGrid("students", "Students");
     }
 
     if (activeTab === "coordinators") {
-      return (
-        <SchoolRelatedGrid
-          items={related.coordinators}
-          title="Coordinators"
-          type="coordinators"
-        />
-      );
+      return renderRelatedGrid("coordinators", "Coordinators");
     }
 
     return (
