@@ -58,7 +58,6 @@ const NoticeAudienceSelector = ({
   const [specializations, setSpecializations] = useState([]);
   const [studentFilters, setStudentFilters] = useState({
     schoolId: lockedSchoolId || audienceCriteria?.schoolIds?.[0] || "",
-    schoolId: lockedSchoolId || audienceCriteria?.schoolIds?.[0] || "",
     programId: audienceCriteria?.programIds?.[0] || "",
     year: audienceCriteria?.metadata?.studentYear || "",
     semesterId: audienceCriteria?.semesterIds?.[0] || "",
@@ -82,11 +81,6 @@ const NoticeAudienceSelector = ({
     if (!studentFilters.schoolId) return programs;
     return programs.filter((program) => getId(program.schoolId) === studentFilters.schoolId);
   }, [programs, studentFilters.schoolId]);
-
-  const visibleAudienceOptions = useMemo(
-    () => audienceOptions.filter((option) => (option.value === "all" ? canTargetAll : allowedRoles.includes(option.value))),
-    [allowedRoles, canTargetAll],
-  );
 
   const yearOptions = useMemo(() => {
     const duration = Number(selectedProgram?.duration || 0);
@@ -222,7 +216,6 @@ const NoticeAudienceSelector = ({
     <div>
       <span className="mb-3 block text-xs font-black text-[var(--university-ink)]">Audience <span className="text-[var(--error)]">*</span></span>
       <div className="flex flex-wrap gap-2">
-        {visibleAudienceOptions.map((option) => {
         {visibleAudienceOptions.map((option) => {
           const active = audience.includes(option.value);
 
