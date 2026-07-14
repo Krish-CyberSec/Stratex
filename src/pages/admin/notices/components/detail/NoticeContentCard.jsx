@@ -1,6 +1,7 @@
 import { CalendarDays, Users } from "lucide-react";
 import { audienceLabel, NoticeStatusBadge } from "../NoticeBadges";
 import { formatNoticeDate } from "./noticeDetailUtils";
+import { hasNoticeHtml, sanitizeNoticeHtml } from "../../noticeContentUtils";
 
 const NoticeContentCard = ({ notice }) => (
   <section className="rounded-xl border border-[var(--border-light)] bg-white p-4 shadow-sm sm:p-6">
@@ -20,9 +21,16 @@ const NoticeContentCard = ({ notice }) => (
       </span>
     </div>
 
-    <div className="mt-5 whitespace-pre-line text-sm font-medium leading-7 text-[var(--university-ink)]">
-      {notice.content}
-    </div>
+    {hasNoticeHtml(notice.content) ? (
+      <div
+        className="notice-rich-content mt-5 text-sm font-medium leading-7 text-[var(--university-ink)]"
+        dangerouslySetInnerHTML={{ __html: sanitizeNoticeHtml(notice.content) }}
+      />
+    ) : (
+      <div className="mt-5 whitespace-pre-line text-sm font-medium leading-7 text-[var(--university-ink)]">
+        {notice.content}
+      </div>
+    )}
   </section>
 );
 

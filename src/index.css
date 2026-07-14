@@ -172,3 +172,65 @@ input[type="password"]::-ms-clear {
   width: 100%;
   object-fit: cover;
 }
+
+.notice-rich-content h2 {
+  margin: 0.65rem 0 0.35rem;
+  font-size: 1.25rem;
+  line-height: 1.35;
+  font-weight: 900;
+  color: var(--university-ink);
+}
+
+.notice-rich-content h3 {
+  margin: 0.55rem 0 0.3rem;
+  font-size: 1rem;
+  line-height: 1.4;
+  font-weight: 800;
+  color: var(--university-ink);
+}
+
+.notice-rich-content p {
+  margin: 0.35rem 0;
+}
+
+.notice-rich-content ul,
+.notice-rich-content ol {
+  margin: 0.5rem 0;
+  padding-left: 1.35rem;
+}
+
+.notice-rich-content ul {
+  list-style: disc;
+}
+
+.notice-rich-content ol {
+  list-style: decimal;
+}
+
+.notice-rich-content a {
+  color: var(--stratex-blue);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.notice-rich-content strong,
+.notice-rich-content b {
+  font-weight: 900;
+}
+
+.notice-rich-content em,
+.notice-rich-content i {
+  font-style: italic;
+}
+
+.notice-rich-content u {
+  text-decoration: underline;
+}
+
+.notice-preview-content h2 {
+  font-size: 1.1rem;
+}
+
+.notice-preview-content h3 {
+  font-size: 0.95rem;
+}

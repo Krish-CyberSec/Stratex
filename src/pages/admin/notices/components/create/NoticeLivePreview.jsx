@@ -1,5 +1,6 @@
 import { Eye, Paperclip } from "lucide-react";
 import { audienceLabel, NoticeStatusBadge } from "../NoticeBadges";
+import { hasNoticeHtml, sanitizeNoticeHtml } from "../../noticeContentUtils";
 
 const formatPreviewDate = (date) => {
   const parsed = date ? new Date(date) : new Date();
@@ -27,9 +28,22 @@ const NoticeLivePreview = ({ form }) => (
       </h3>
       <p className="mt-1 text-xs font-bold text-[var(--university-muted)]">{formatPreviewDate(form.publishedAt)}</p>
       <div className="my-4 h-px bg-[var(--border-light)]" />
-      <p className="min-h-16 whitespace-pre-line text-sm font-medium leading-6 text-[var(--university-muted)]">
-        {form.content || "Notice content will appear here..."}
-      </p>
+      {form.content ? (
+        hasNoticeHtml(form.content) ? (
+          <div
+            className="notice-rich-content notice-preview-content min-h-16 text-sm font-medium leading-6 text-[var(--university-muted)]"
+            dangerouslySetInnerHTML={{ __html: sanitizeNoticeHtml(form.content) }}
+          />
+        ) : (
+          <p className="min-h-16 whitespace-pre-line text-sm font-medium leading-6 text-[var(--university-muted)]">
+            {form.content}
+          </p>
+        )
+      ) : (
+        <p className="min-h-16 text-sm font-medium leading-6 text-[var(--university-muted)]">
+          Notice content will appear here...
+        </p>
+      )}
       <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-bold text-[var(--university-ink)]">
         <span>Audience:</span>
         <span className="rounded-md bg-blue-50 px-2 py-1 text-[var(--stratex-blue)]">{audienceLabel(form.audience)}</span>

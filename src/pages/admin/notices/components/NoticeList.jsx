@@ -1,6 +1,7 @@
 import { Edit3, Eye, FileText, MoreVertical, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { audienceLabel, NoticeStatusBadge } from "./NoticeBadges";
+import { getNoticeText } from "../noticeContentUtils";
 
 const formatDate = (date) => {
   if (!date) return "--";
@@ -83,7 +84,7 @@ const NoticeList = ({ canManage, loading, notices, onDelete, onEdit, onView }) =
               <tr key={notice._id || notice.id} className="text-xs font-semibold text-[var(--university-ink)] transition hover:bg-[var(--surface-soft)]">
                 <td className="px-5 py-5">
                   <p className="line-clamp-1 text-sm font-black">{notice.title}</p>
-                  <p className="mt-2 line-clamp-2 max-w-2xl text-xs font-medium leading-5 text-[var(--university-muted)]">{notice.content}</p>
+                  <p className="mt-2 line-clamp-2 max-w-2xl text-xs font-medium leading-5 text-[var(--university-muted)]">{getNoticeText(notice.content)}</p>
                   {notice.attachment?.url ? (
                     <a href={notice.attachment.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-[var(--stratex-blue)]">
                       <FileText size={13} />
@@ -123,7 +124,7 @@ const NoticeList = ({ canManage, loading, notices, onDelete, onEdit, onView }) =
               </div>
               <NoticeActions canManage={canManage} notice={notice} onDelete={onDelete} onEdit={onEdit} onView={onView} />
             </div>
-            <p className="mt-3 line-clamp-3 text-xs font-medium leading-5 text-[var(--university-muted)]">{notice.content}</p>
+            <p className="mt-3 line-clamp-3 text-xs font-medium leading-5 text-[var(--university-muted)]">{getNoticeText(notice.content)}</p>
             {notice.attachment?.url ? (
               <a href={notice.attachment.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[var(--stratex-blue)]">
                 <FileText size={13} />

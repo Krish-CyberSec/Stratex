@@ -14,12 +14,14 @@ import {
   Underline,
   Undo2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
 import { createNotice } from "../../../services/noticeService";
 import NoticeAttachmentField from "./components/create/NoticeAttachmentField";
 import NoticeAudienceSelector from "./components/create/NoticeAudienceSelector";
 import NoticeCreateAside from "./components/create/NoticeCreateAside";
+import { getNoticeText } from "./noticeContentUtils";
 
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.response?.data?.errors?.[0] || error?.message || fallback;
@@ -33,39 +35,130 @@ const nowForInput = () => {
 const initialForm = {
   title: "",
   content: "",
+  category: "general",
   attachment: null,
   audience: ["all"],
+  audienceCriteria: { allUsers: true },
   status: "published",
   publishedAt: nowForInput(),
 };
 
-const toolbarButtons = [
-  { icon: Bold, label: "Bold" },
-  { icon: Italic, label: "Italic" },
-  { icon: Underline, label: "Underline" },
-  { icon: List, label: "Bulleted list" },
-  { icon: ListOrdered, label: "Numbered list" },
-  { icon: AlignLeft, label: "Align left" },
-  { icon: AlignCenter, label: "Align center" },
-  { icon: AlignRight, label: "Align right" },
-  { icon: LinkIcon, label: "Insert link" },
-  { icon: Undo2, label: "Undo" },
-  { icon: Redo2, label: "Redo" },
+const noticeCategories = [
+  { label: "Academic", value: "academic" },
+  { label: "Examinations", value: "examinations" },
+  { label: "Events", value: "events" },
+  { label: "General", value: "general" },
+  { label: "Holidays", value: "holidays" },
+  { label: "Administrative", value: "administrative" },
+  { label: "Urgent", value: "urgent" },
 ];
+
+const getId = (value) => (typeof value === "object" ? value?._id || value?.id || "" : value || "");
+
+const toolbarButtons = [
+  { icon: Bold, label: "Bold", command: "bold", state: "bold" },
+  { icon: Italic, label: "Italic", command: "italic", state: "italic" },
+  { icon: Underline, label: "Underline", command: "underline", state: "underline" },
+  { icon: List, label: "Bulleted list", command: "insertUnorderedList", state: "insertUnorderedList" },
+  { icon: ListOrdered, label: "Numbered list", command: "insertOrderedList", state: "insertOrderedList" },
+  { icon: AlignLeft, label: "Align left", command: "justifyLeft", state: "justifyLeft" },
+  { icon: AlignCenter, label: "Align center", command: "justifyCenter", state: "justifyCenter" },
+  { icon: AlignRight, label: "Align right", command: "justifyRight", state: "justifyRight" },
+  { icon: LinkIcon, label: "Insert link", command: "createLink" },
+  { icon: Undo2, label: "Undo", command: "undo" },
+  { icon: Redo2, label: "Redo", command: "redo" },
+];
+
+const editorStateCommands = [
+  "bold",
+  "italic",
+  "underline",
+  "insertUnorderedList",
+  "insertOrderedList",
+  "justifyLeft",
+  "justifyCenter",
+  "justifyRight",
+];
+
+const normalizeBlock = (value = "") => {
+  const block = value.toLowerCase();
+  if (block.includes("h2")) return "h2";
+  if (block.includes("h3")) return "h3";
+  return "p";
+};
 
 const CreateNotice = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const editorRef = useRef(null);
   const [form, setForm] = useState(initialForm);
+  const [activeEditorState, setActiveEditorState] = useState({});
+  const [blockStyle, setBlockStyle] = useState("p");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const roles = user?.roles || [];
+  const isSuperAdmin = roles.includes("superAdmin");
+  const isSchoolAdmin = roles.includes("schoolAdmin");
+  const ownSchoolId = getId(user?.schoolId);
+  const ownSchoolLabel = typeof user?.schoolId === "object" ? user.schoolId?.name : "";
+  const allowedAudienceRoles = isSuperAdmin
+    ? ["all", "superAdmin", "schoolAdmin", "faculty", "coordinator", "student", "examCell"]
+    : ["faculty", "coordinator", "student"];
 
   const canSubmit = useMemo(
-    () => form.title.trim().length >= 2 && form.content.trim().length >= 2 && !saving,
+    () => form.title.trim().length >= 2 && getNoticeText(form.content).trim().length >= 2 && !saving,
     [form.content, form.title, saving],
   );
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const syncEditorContent = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const text = editor.textContent?.trim() || "";
+    updateField("content", text ? editor.innerHTML : "");
+  };
+
+  const refreshEditorState = () => {
+    if (!editorRef.current) return;
+
+    const nextState = editorStateCommands.reduce((state, command) => ({
+      ...state,
+      [command]: document.queryCommandState(command),
+    }), {});
+
+    setActiveEditorState(nextState);
+    setBlockStyle(normalizeBlock(document.queryCommandValue("formatBlock")));
+  };
+
+  const focusEditor = () => {
+    editorRef.current?.focus();
+  };
+
+  const runEditorCommand = (command) => {
+    focusEditor();
+
+    if (command === "createLink") {
+      const url = window.prompt("Enter link URL");
+      if (!url) return;
+      document.execCommand(command, false, url);
+    } else {
+      document.execCommand(command, false, null);
+    }
+
+    syncEditorContent();
+    refreshEditorState();
+  };
+
+  const applyBlockStyle = (value) => {
+    focusEditor();
+    document.execCommand("formatBlock", false, value);
+    syncEditorContent();
+    setBlockStyle(value);
+    refreshEditorState();
   };
 
   const submit = async (status) => {
@@ -76,7 +169,9 @@ const CreateNotice = () => {
     const payload = new FormData();
     payload.append("title", form.title.trim());
     payload.append("content", form.content.trim());
+    payload.append("category", form.category);
     payload.append("audience", JSON.stringify(form.audience));
+    payload.append("audienceCriteria", JSON.stringify(form.audienceCriteria));
     payload.append("status", status);
     if (form.publishedAt) payload.append("publishedAt", new Date(form.publishedAt).toISOString());
     if (form.attachment) payload.append("attachment", form.attachment);
@@ -144,28 +239,73 @@ const CreateNotice = () => {
                   </div>
                 </label>
 
+                <label className="block">
+                  <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">Notice Category <span className="text-[var(--error)]">*</span></span>
+                  <select
+                    value={form.category}
+                    onChange={(event) => updateField("category", event.target.value)}
+                    className="h-12 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-semibold text-[var(--university-ink)] outline-none transition focus:border-[var(--stratex-blue)]"
+                  >
+                    {noticeCategories.map((category) => (
+                      <option key={category.value} value={category.value}>{category.label}</option>
+                    ))}
+                  </select>
+                </label>
+
                 <div>
                   <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">Notice Content <span className="text-[var(--error)]">*</span></span>
                   <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-white focus-within:border-[var(--stratex-blue)]">
                     <div className="flex flex-wrap items-center gap-1 border-b border-[var(--border-light)] bg-[var(--surface-soft)] px-3 py-2">
-                      <select className="mr-2 h-8 rounded-md border border-[var(--border-light)] bg-white px-2 text-xs font-bold text-[var(--university-ink)] outline-none">
-                        <option>Paragraph</option>
-                        <option>Heading</option>
+                      <select
+                        value={blockStyle}
+                        onChange={(event) => applyBlockStyle(event.target.value)}
+                        onFocus={refreshEditorState}
+                        className={`mr-2 h-8 rounded-md border px-2 text-xs font-bold outline-none transition ${
+                          blockStyle !== "p"
+                            ? "border-[var(--stratex-blue)] bg-blue-50 text-[var(--stratex-blue)]"
+                            : "border-[var(--border-light)] bg-white text-[var(--university-ink)]"
+                        }`}
+                      >
+                        <option value="p">Paragraph</option>
+                        <option value="h2">Heading</option>
+                        <option value="h3">Subheading</option>
                       </select>
-                      {toolbarButtons.map(({ icon: Icon, label }) => (
-                        <button key={label} type="button" title={label} className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--university-muted)] transition hover:bg-white hover:text-[var(--stratex-blue)]">
+                      {toolbarButtons.map(({ command, icon: Icon, label, state }) => {
+                        const active = state ? activeEditorState[state] : false;
+
+                        return (
+                        <button
+                          key={label}
+                          type="button"
+                          title={label}
+                          onClick={() => runEditorCommand(command)}
+                          aria-pressed={active}
+                          className={`flex h-8 w-8 items-center justify-center rounded-md border transition ${
+                            active
+                              ? "border-[var(--stratex-blue)] bg-blue-50 text-[var(--stratex-blue)] shadow-sm"
+                              : "border-transparent text-[var(--university-muted)] hover:bg-white hover:text-[var(--stratex-blue)]"
+                          }`}
+                        >
                           <Icon size={15} />
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
-                    <textarea
-                      maxLength={5000}
-                      value={form.content}
-                      onChange={(event) => updateField("content", event.target.value)}
-                      placeholder="Write the notice details here..."
-                      className="min-h-48 w-full resize-y border-0 bg-white px-4 py-4 text-sm font-medium leading-6 text-[var(--university-ink)] outline-none"
+                    <div
+                      ref={editorRef}
+                      contentEditable
+                      suppressContentEditableWarning
+                      role="textbox"
+                      aria-label="Notice content"
+                      data-placeholder="Write the notice details here..."
+                      onInput={syncEditorContent}
+                      onBlur={syncEditorContent}
+                      onKeyUp={refreshEditorState}
+                      onMouseUp={refreshEditorState}
+                      onFocus={refreshEditorState}
+                      className="notice-rich-content min-h-48 w-full overflow-auto border-0 bg-white px-4 py-4 text-sm font-medium leading-6 text-[var(--university-ink)] outline-none empty:before:text-[var(--university-muted)] empty:before:content-[attr(data-placeholder)]"
                     />
-                    <div className="border-t border-[var(--border-light)] px-4 py-2 text-right text-[11px] font-bold text-[var(--university-muted)]">{form.content.length}/5000</div>
+                    <div className="border-t border-[var(--border-light)] px-4 py-2 text-right text-[11px] font-bold text-[var(--university-muted)]">{getNoticeText(form.content).length}/5000</div>
                   </div>
                 </div>
 
@@ -177,7 +317,16 @@ const CreateNotice = () => {
               <h2 className="text-base font-black text-[var(--university-ink)]">Audience & Publishing</h2>
 
               <div className="mt-5 space-y-5">
-                <NoticeAudienceSelector audience={form.audience} onChange={(value) => updateField("audience", value)} />
+                <NoticeAudienceSelector
+                  audience={form.audience}
+                  audienceCriteria={form.audienceCriteria}
+                  allowedRoles={allowedAudienceRoles}
+                  canTargetAll={isSuperAdmin}
+                  lockedSchoolId={isSchoolAdmin ? ownSchoolId : ""}
+                  lockedSchoolLabel={isSchoolAdmin ? ownSchoolLabel : ""}
+                  onChange={(value) => updateField("audience", value)}
+                  onCriteriaChange={(value) => updateField("audienceCriteria", value)}
+                />
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="block">
