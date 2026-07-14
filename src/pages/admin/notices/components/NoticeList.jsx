@@ -1,6 +1,6 @@
-import { Edit3, Eye, FileText, MoreVertical, Trash2 } from "lucide-react";
+import { ArchiveX, CheckCircle2, Circle, Edit3, Eye, FileText, MoreVertical, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { audienceLabel, NoticeStatusBadge } from "./NoticeBadges";
+import { audienceLabel, noticeCategoryLabel, NoticeStatusBadge } from "./NoticeBadges";
 import { getNoticeText } from "../noticeContentUtils";
 
 const formatDate = (date) => {
@@ -16,9 +16,18 @@ const formatDate = (date) => {
   });
 };
 
-const NoticeActions = ({ canManage, notice, onDelete, onEdit, onView }) => {
+const ReadBadge = ({ isRead }) => (
+  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-black uppercase ${isRead ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+    {isRead ? <CheckCircle2 size={11} /> : <Circle size={10} />}
+    {isRead ? "Read" : "Unread"}
+  </span>
+);
+
+const NoticeActions = ({ canManage, notice, onClear, onDelete, onEdit, onView }) => {
   const [open, setOpen] = useState(false);
-  const canOpenMenu = canManage && !notice.isSample;
+  const canManageNotice = Boolean((notice.canManage ?? canManage) && !notice.isSample);
+  const canClearNotice = Boolean(onClear && !notice.isSample && notice.canClear !== false);
+  const canOpenMenu = canManageNotice || canClearNotice;
 
   return (
     <div className="relative flex items-center justify-end gap-2">
@@ -42,22 +51,32 @@ const NoticeActions = ({ canManage, notice, onDelete, onEdit, onView }) => {
         </button>
       ) : null}
       {open ? (
-        <div className="absolute right-0 top-9 z-20 w-36 overflow-hidden rounded-lg border border-[var(--border-light)] bg-white py-1 text-xs font-bold shadow-xl">
-          <button type="button" onClick={() => { setOpen(false); onEdit(notice); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-[var(--university-ink)] hover:bg-[var(--surface-soft)]">
-            <Edit3 size={13} />
-            Edit
-          </button>
-          <button type="button" onClick={() => { setOpen(false); onDelete(notice); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-[var(--error)] hover:bg-red-50">
-            <Trash2 size={13} />
-            Delete
-          </button>
+        <div className="absolute right-0 top-9 z-20 w-44 overflow-hidden rounded-lg border border-[var(--border-light)] bg-white py-1 text-xs font-bold shadow-xl">
+          {canManageNotice ? (
+            <>
+              <button type="button" onClick={() => { setOpen(false); onEdit(notice); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-[var(--university-ink)] hover:bg-[var(--surface-soft)]">
+                <Edit3 size={13} />
+                Edit
+              </button>
+              <button type="button" onClick={() => { setOpen(false); onDelete(notice); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-[var(--error)] hover:bg-red-50">
+                <Trash2 size={13} />
+                Delete
+              </button>
+            </>
+          ) : null}
+          {canClearNotice ? (
+            <button type="button" onClick={() => { setOpen(false); onClear(notice); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-[var(--university-muted)] hover:bg-[var(--surface-soft)]">
+              <ArchiveX size={13} />
+              Clear from my view
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>
   );
 };
 
-const NoticeList = ({ canManage, loading, notices, onDelete, onEdit, onView }) => (
+const NoticeList = ({ canManage, loading, notices, onClear, onDelete, onEdit, onView }) => (
   <section className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-white shadow-sm">
     <div className="hidden lg:block">
       <table className="min-w-full table-fixed text-left">
@@ -84,6 +103,7 @@ const NoticeList = ({ canManage, loading, notices, onDelete, onEdit, onView }) =
               <tr key={notice._id || notice.id} className="text-xs font-semibold text-[var(--university-ink)] transition hover:bg-[var(--surface-soft)]">
                 <td className="px-5 py-5">
                   <p className="line-clamp-1 text-sm font-black">{notice.title}</p>
+                  <p className="mt-1 text-[11px] font-black uppercase text-[var(--stratex-blue)]">{noticeCategoryLabel(notice.category)}</p>
                   <p className="mt-2 line-clamp-2 max-w-2xl text-xs font-medium leading-5 text-[var(--university-muted)]">{getNoticeText(notice.content)}</p>
                   {notice.attachment?.url ? (
                     <a href={notice.attachment.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-[var(--stratex-blue)]">
@@ -93,10 +113,15 @@ const NoticeList = ({ canManage, loading, notices, onDelete, onEdit, onView }) =
                   ) : null}
                 </td>
                 <td className="px-5 py-5">{audienceLabel(notice.audience)}</td>
-                <td className="px-5 py-5"><NoticeStatusBadge status={notice.status} /></td>
+                <td className="px-5 py-5">
+                  <div className="flex flex-col items-start gap-2">
+                    <NoticeStatusBadge status={notice.status} />
+                    <ReadBadge isRead={notice.isRead} />
+                  </div>
+                </td>
                 <td className="px-5 py-5">{formatDate(notice.publishedAt || notice.createdAt)}</td>
                 <td className="px-5 py-5">
-                  <NoticeActions canManage={canManage} notice={notice} onDelete={onDelete} onEdit={onEdit} onView={onView} />
+                  <NoticeActions canManage={canManage} notice={notice} onClear={onClear} onDelete={onDelete} onEdit={onEdit} onView={onView} />
                 </td>
               </tr>
             ))
@@ -121,8 +146,9 @@ const NoticeList = ({ canManage, loading, notices, onDelete, onEdit, onView }) =
               <div className="min-w-0">
                 <h3 className="line-clamp-2 text-sm font-black text-[var(--university-ink)]">{notice.title}</h3>
                 <p className="mt-1 text-xs font-bold text-[var(--university-muted)]">{audienceLabel(notice.audience)}</p>
+                <p className="mt-1 text-[11px] font-black uppercase text-[var(--stratex-blue)]">{noticeCategoryLabel(notice.category)}</p>
               </div>
-              <NoticeActions canManage={canManage} notice={notice} onDelete={onDelete} onEdit={onEdit} onView={onView} />
+              <NoticeActions canManage={canManage} notice={notice} onClear={onClear} onDelete={onDelete} onEdit={onEdit} onView={onView} />
             </div>
             <p className="mt-3 line-clamp-3 text-xs font-medium leading-5 text-[var(--university-muted)]">{getNoticeText(notice.content)}</p>
             {notice.attachment?.url ? (
@@ -132,7 +158,10 @@ const NoticeList = ({ canManage, loading, notices, onDelete, onEdit, onView }) =
               </a>
             ) : null}
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-              <NoticeStatusBadge status={notice.status} />
+              <div className="flex flex-wrap items-center gap-2">
+                <NoticeStatusBadge status={notice.status} />
+                <ReadBadge isRead={notice.isRead} />
+              </div>
               <span className="text-[11px] font-bold text-[var(--university-muted)]">{formatDate(notice.publishedAt || notice.createdAt)}</span>
             </div>
           </article>

@@ -12,5 +12,11 @@ export const createNotice = (data) =>
 export const updateNotice = (id, data) =>
   axiosInstance.put(`/notices/${id}`, data);
 
+export const markNoticeRead = (id) =>
+  axiosInstance.patch(`/notices/${id}/read`);
+
+export const clearNotice = (id) =>
+  axiosInstance.patch(`/notices/${id}/clear`);
+
 export const deleteNotice = (id) =>
   axiosInstance.delete(`/notices/${id}`);

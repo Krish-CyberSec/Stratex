@@ -30,3 +30,17 @@ export const audienceLabel = (audience = []) => {
 
   return audience.map((item) => labels[item] || item).join(", ");
 };
+
+export const noticeCategoryLabel = (category = "general") => {
+  const labels = {
+    academic: "Academic",
+    examinations: "Examinations",
+    events: "Events",
+    general: "General",
+    holidays: "Holidays",
+    administrative: "Administrative",
+    urgent: "Urgent",
+  };
+
+  return labels[category] || labels.general;
+};

@@ -2,7 +2,8 @@ import { Bell } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
-import { deleteNotice, getNotices } from "../../../services/noticeService";
+import { clearNotice, createNotice, deleteNotice, getNotices, updateNotice } from "../../../services/noticeService";
+import { getUsers } from "../../../services/userService";
 import DeleteNoticeModal from "./components/DeleteNoticeModal";
 import NoticeList from "./components/NoticeList";
 import NoticeSidebar from "./components/NoticeSidebar";
@@ -43,6 +44,7 @@ const getErrorMessage = (error, fallback) =>
 
 const getList = (response) => response?.data?.data || [];
 const getPagination = (response) => response?.data?.pagination || {};
+const getId = (value) => (typeof value === "object" ? value?._id || value?.id || "" : value || "");
 
 const Notices = () => {
   const { user } = useAuth();
@@ -51,6 +53,8 @@ const Notices = () => {
   const [pagination, setPagination] = useState({});
   const [activeStatus, setActiveStatus] = useState("all");
   const [search, setSearch] = useState("");
+  const [createdBy, setCreatedBy] = useState("");
+  const [creatorOptions, setCreatorOptions] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [modalLoading, setModalLoading] = useState(false);
@@ -59,7 +63,47 @@ const Notices = () => {
   const [deletingNotice, setDeletingNotice] = useState(null);
 
   const roles = user?.roles || [];
-  const canManage = roles.some((role) => ["superAdmin", "schoolAdmin", "examCell"].includes(role));
+  const canManage = roles.some((role) => ["superAdmin", "schoolAdmin"].includes(role));
+  const isSuperAdmin = roles.includes("superAdmin");
+  const isSchoolAdmin = roles.includes("schoolAdmin");
+  const ownSchoolId = getId(user?.schoolId);
+
+  useEffect(() => {
+    const loadCreators = async () => {
+      if (!isSuperAdmin && !isSchoolAdmin) {
+        setCreatorOptions([]);
+        return;
+      }
+
+      try {
+        if (isSchoolAdmin) {
+          const response = await getUsers({
+            page: 1,
+            limit: 200,
+            role: "coordinator",
+            ...(ownSchoolId ? { schoolId: ownSchoolId } : {}),
+            sortBy: "firstName",
+            order: "asc",
+          });
+          setCreatorOptions(getList(response));
+          return;
+        }
+
+        const responses = await Promise.all([
+          getUsers({ page: 1, limit: 200, role: "superAdmin", sortBy: "firstName", order: "asc" }),
+          getUsers({ page: 1, limit: 200, role: "schoolAdmin", sortBy: "firstName", order: "asc" }),
+          getUsers({ page: 1, limit: 200, role: "coordinator", sortBy: "firstName", order: "asc" }),
+        ]);
+        const users = responses.flatMap(getList);
+        const uniqueUsers = Array.from(new Map(users.map((item) => [getId(item), item])).values());
+        setCreatorOptions(uniqueUsers);
+      } catch {
+        setCreatorOptions([]);
+      }
+    };
+
+    loadCreators();
+  }, [isSchoolAdmin, isSuperAdmin, ownSchoolId]);
 
   const loadNotices = useCallback(async () => {
     setLoading(true);
@@ -71,7 +115,9 @@ const Notices = () => {
         limit: 5,
         sortBy: "publishedAt",
         order: "desc",
-        ...(activeStatus !== "all" ? { status: activeStatus } : {}),
+        ...(createdBy ? { createdBy } : {}),
+        ...(["read", "unread"].includes(activeStatus) ? { readStatus: activeStatus } : {}),
+        ...(activeStatus !== "all" && !["read", "unread"].includes(activeStatus) ? { status: activeStatus } : {}),
         ...(search.trim() ? { search: search.trim() } : {}),
       });
 
@@ -84,7 +130,7 @@ const Notices = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeStatus, page, search]);
+  }, [activeStatus, createdBy, page, search]);
 
   useEffect(() => {
     const timeout = setTimeout(loadNotices, 250);
@@ -98,10 +144,40 @@ const Notices = () => {
   const statusCounts = useMemo(() => {
     const source = notices.length ? notices : sampleNotices;
     return source.reduce((acc, notice) => {
-      acc[notice.status] = (acc[notice.status] || 0) + 1;
+      const key = notice.category || "general";
+      acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
   }, [notices]);
+
+  const handleSave = async (payload) => {
+    setModalLoading(true);
+    setModalError("");
+
+    try {
+      const data = new FormData();
+      data.append("title", payload.title);
+      data.append("content", payload.content);
+      data.append("category", payload.category || "general");
+      data.append("audience", JSON.stringify(payload.audience));
+      data.append("status", payload.status);
+      if (payload.publishedAt) data.append("publishedAt", payload.publishedAt);
+      if (payload.attachment) data.append("attachment", payload.attachment);
+
+      if (editingNotice) {
+        await updateNotice(editingNotice._id, data);
+      } else {
+        await createNotice(data);
+      }
+      setFormOpen(false);
+      setEditingNotice(null);
+      await loadNotices();
+    } catch (err) {
+      setModalError(getErrorMessage(err, "Unable to save notice"));
+    } finally {
+      setModalLoading(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!deletingNotice) return;
@@ -116,6 +192,19 @@ const Notices = () => {
       setModalError(getErrorMessage(err, "Unable to delete notice"));
     } finally {
       setModalLoading(false);
+    }
+  };
+
+  const handleClear = async (notice) => {
+    if (!notice?._id || notice.isSample) return;
+
+    setError("");
+
+    try {
+      await clearNotice(notice._id);
+      await loadNotices();
+    } catch (err) {
+      setError(getErrorMessage(err, "Unable to clear notice"));
     }
   };
 
@@ -143,6 +232,12 @@ const Notices = () => {
           activeStatus={activeStatus}
           canCreate={canManage}
           onCreate={() => navigate("/dashboard/notices/create")}
+          creatorOptions={creatorOptions}
+          createdBy={createdBy}
+          onCreatorChange={(value) => {
+            setCreatedBy(value);
+            setPage(1);
+          }}
           onSearch={(value) => {
             setSearch(value);
             setPage(1);
@@ -152,6 +247,7 @@ const Notices = () => {
             setPage(1);
           }}
           search={search}
+          showStatusTabs
         />
 
         {error ? (
@@ -170,6 +266,7 @@ const Notices = () => {
                 setModalError("");
                 setDeletingNotice(notice);
               }}
+              onClear={handleClear}
               onEdit={(notice) => {
                 navigate(`/dashboard/notices/${notice._id || notice.id}/edit`);
               }}
@@ -199,10 +296,10 @@ const Notices = () => {
           </main>
 
           <NoticeSidebar counts={{
-            academic: statusCounts.published || 0,
-            examinations: statusCounts.draft || 0,
-            events: statusCounts.archived || 0,
-            general: statusCounts.inactive || 0,
+            academic: statusCounts.academic || 0,
+            examinations: statusCounts.examinations || 0,
+            events: statusCounts.events || 0,
+            general: statusCounts.general || 0,
             holidays: notices.length || sampleNotices.length,
           }} />
         </div>

@@ -3,6 +3,9 @@ import axiosInstance from "../utils/axiosInstance";
 export const getEvents = () =>
   axiosInstance.get("/events");
 
+export const getEventById = (id) =>
+  axiosInstance.get(`/events/${id}`);
+
 export const createEvent = (data) =>
   axiosInstance.post("/events", data);
 

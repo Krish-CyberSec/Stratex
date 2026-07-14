@@ -1,5 +1,6 @@
 import { ArrowRight, Bell, Download, FileText, List, UserRound } from "lucide-react";
-import { audienceLabel, NoticeStatusBadge } from "../NoticeBadges";
+import { useAuth } from "../../../../../context/AuthContext";
+import { audienceLabel, noticeCategoryLabel, NoticeStatusBadge } from "../NoticeBadges";
 import { formatNoticeDate, getPersonName } from "./noticeDetailUtils";
 
 const InfoRow = ({ label, value }) => (
@@ -28,7 +29,16 @@ const ActionButton = ({ children, href, icon: Icon }) => {
   return <button type="button" className={className}>{content}</button>;
 };
 
-const NoticeDetailSidebar = ({ notice, onBack }) => (
+const getId = (value) => (typeof value === "object" ? value?._id || value?.id || "" : value || "");
+
+const NoticeDetailSidebar = ({ notice, onBack }) => {
+  const { user } = useAuth();
+  const roles = user?.roles || [];
+  const isSuperAdmin = roles.includes("superAdmin");
+  const isSender = getId(notice.createdBy) && getId(notice.createdBy) === getId(user);
+  const canViewEngagement = isSuperAdmin || isSender;
+
+  return (
   <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
     <section className="rounded-xl border border-[var(--border-light)] bg-white p-5 shadow-sm">
       <h2 className="text-sm font-black text-[var(--university-ink)]">Notice Information</h2>
@@ -38,6 +48,7 @@ const NoticeDetailSidebar = ({ notice, onBack }) => (
           <span className="text-right"><NoticeStatusBadge status={notice.status} /></span>
         </div>
         <InfoRow label="Published At" value={formatNoticeDate(notice.publishedAt || notice.createdAt)} />
+        <InfoRow label="Category" value={noticeCategoryLabel(notice.category)} />
         <InfoRow label="Audience" value={audienceLabel(notice.audience)} />
         <InfoRow label="Created By" value={getPersonName(notice.createdBy)} />
         <InfoRow label="Created On" value={formatNoticeDate(notice.createdAt)} />
@@ -45,6 +56,7 @@ const NoticeDetailSidebar = ({ notice, onBack }) => (
       </div>
     </section>
 
+    {canViewEngagement ? (
     <section className="rounded-xl border border-[var(--border-light)] bg-white p-5 shadow-sm">
       <h2 className="text-sm font-black text-[var(--university-ink)]">Reach & Engagement</h2>
       <div className="mt-4 space-y-3">
@@ -55,6 +67,7 @@ const NoticeDetailSidebar = ({ notice, onBack }) => (
       </div>
       <p className="mt-4 text-[11px] font-bold text-[var(--university-muted)]">Updated just now</p>
     </section>
+    ) : null}
 
     <section className="rounded-xl border border-[var(--border-light)] bg-white p-5 shadow-sm">
       <h2 className="text-sm font-black text-[var(--university-ink)]">Related Actions</h2>
@@ -73,6 +86,7 @@ const NoticeDetailSidebar = ({ notice, onBack }) => (
       </div>
     </section>
   </aside>
-);
+  );
+};
 
 export default NoticeDetailSidebar;

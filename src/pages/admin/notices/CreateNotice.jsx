@@ -14,7 +14,7 @@ import {
   Underline,
   Undo2,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { createNotice } from "../../../services/noticeService";
@@ -105,6 +105,20 @@ const CreateNotice = () => {
     ? ["all", "superAdmin", "schoolAdmin", "faculty", "coordinator", "student", "examCell"]
     : ["faculty", "coordinator", "student"];
 
+  useEffect(() => {
+    if (!isSchoolAdmin || !ownSchoolId || !form.audience.includes("all")) return;
+
+    setForm((current) => ({
+      ...current,
+      audience: ["student"],
+      audienceCriteria: {
+        allUsers: false,
+        roles: ["student"],
+        schoolIds: [ownSchoolId],
+      },
+    }));
+  }, [form.audience, isSchoolAdmin, ownSchoolId]);
+
   const canSubmit = useMemo(
     () => form.title.trim().length >= 2 && getNoticeText(form.content).trim().length >= 2 && !saving,
     [form.content, form.title, saving],
@@ -160,6 +174,26 @@ const CreateNotice = () => {
     setBlockStyle(value);
     refreshEditorState();
   };
+
+  if (!isSuperAdmin && !isSchoolAdmin) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-[linear-gradient(135deg,#ffffff_0%,var(--background)_52%,#f5f7ff_100%)] px-3 py-5 sm:px-5 lg:px-7">
+        <div className="mx-auto max-w-2xl rounded-xl border border-red-100 bg-white p-6 text-center shadow-sm">
+          <h1 className="text-lg font-black text-[var(--university-ink)]">Notice creation is restricted</h1>
+          <p className="mt-2 text-sm font-semibold leading-6 text-[var(--university-muted)]">
+            Only super admins and school admins can create notices.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate("/dashboard/notices")}
+            className="mt-5 inline-flex h-10 items-center justify-center rounded-lg bg-[var(--stratex-blue)] px-4 text-xs font-black text-white"
+          >
+            Back to Notices
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const submit = async (status) => {
     if (!canSubmit) return;

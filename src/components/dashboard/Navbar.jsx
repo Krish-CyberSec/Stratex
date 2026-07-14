@@ -12,6 +12,7 @@ import {
   formatShortDate,
   getNotificationDocument,
   getNotificationId,
+  getNotificationTargetPath,
   getSenderName,
   truncateText,
 } from "../../config/notificationConfig";
@@ -137,9 +138,10 @@ const Navbar = () => {
     }
 
     setNotificationOpen(false);
-    navigate(`/dashboard/notifications/${notificationId}`, {
+    const targetPath = getNotificationTargetPath(item) || `/dashboard/notifications/${notificationId}`;
+    navigate(targetPath, targetPath.includes("/dashboard/notifications") ? {
       state: { notificationItem: item },
-    });
+    } : undefined);
   };
 
   const previewNotifications = getPreviewNotifications(notifications);
