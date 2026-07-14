@@ -22,6 +22,7 @@ export const audienceLabel = (audience = []) => {
     superAdmin: "Super Admin",
     schoolAdmin: "School Admin",
     faculty: "Faculty",
+    coordinator: "Coordinator",
     student: "Students",
     examCell: "Exam Cell",
     all: "All",

@@ -27,6 +27,7 @@ import Notification from "../components/dashboard/Notifications";
 import NotificationDetail from "../components/dashboard/NotificationDetail";
 import Notices from "../pages/admin/notices/Notices";
 import CreateNotice from "../pages/admin/notices/CreateNotice";
+import EditNotice from "../pages/admin/notices/EditNotice";
 import NoticeView from "../pages/admin/notices/NoticeView";
 import Events from "../pages/admin/events/Events";
 import Profile from "../pages/profile/Profile";
@@ -192,6 +193,14 @@ const Navlinks = () => {
           element={
             <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin", "examCell"]}>
               <CreateNotice />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="notices/:id/edit"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin", "examCell"]}>
+              <EditNotice />
             </ProtectedRoute>
           }
         />

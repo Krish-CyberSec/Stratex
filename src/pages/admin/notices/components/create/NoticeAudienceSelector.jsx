@@ -42,18 +42,35 @@ const buildCriteria = ({ audience, schoolId, programId, specializationId, semest
   return criteria;
 };
 
-const NoticeAudienceSelector = ({ audience, audienceCriteria, onChange, onCriteriaChange }) => {
+const NoticeAudienceSelector = ({
+  audience,
+  audienceCriteria,
+  allowedRoles = audienceOptions.map((option) => option.value),
+  canTargetAll = true,
+  lockedSchoolId = "",
+  lockedSchoolLabel = "",
+  onChange,
+  onCriteriaChange,
+}) => {
   const [schools, setSchools] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [semesters, setSemesters] = useState([]);
   const [specializations, setSpecializations] = useState([]);
   const [studentFilters, setStudentFilters] = useState({
-    schoolId: audienceCriteria?.schoolIds?.[0] || "",
+    schoolId: lockedSchoolId || audienceCriteria?.schoolIds?.[0] || "",
     programId: audienceCriteria?.programIds?.[0] || "",
     year: audienceCriteria?.metadata?.studentYear || "",
     semesterId: audienceCriteria?.semesterIds?.[0] || "",
     specializationId: audienceCriteria?.specializationIds?.[0] || "",
   });
+
+  const visibleAudienceOptions = useMemo(
+    () => audienceOptions.filter((option) => {
+      if (option.value === "all") return canTargetAll && allowedRoles.includes("all");
+      return allowedRoles.includes(option.value);
+    }),
+    [allowedRoles, canTargetAll],
+  );
 
   const selectedProgram = useMemo(
     () => programs.find((program) => getId(program) === studentFilters.programId),
@@ -88,7 +105,7 @@ const NoticeAudienceSelector = ({ audience, audienceCriteria, onChange, onCriter
     (nextAudience, nextFilters = studentFilters) => {
       const criteria = buildCriteria({
         audience: nextAudience,
-        schoolId: nextFilters.schoolId,
+      schoolId: lockedSchoolId || nextFilters.schoolId,
         programId: nextFilters.programId,
         specializationId: nextFilters.specializationId,
         semesterId: nextFilters.semesterId,
@@ -103,11 +120,12 @@ const NoticeAudienceSelector = ({ audience, audienceCriteria, onChange, onCriter
         onCriteriaChange(criteria);
       }
     },
-    [audienceCriteria, availableSemesters, onCriteriaChange, studentFilters],
+    [audienceCriteria, availableSemesters, lockedSchoolId, onCriteriaChange, studentFilters],
   );
 
   const toggle = (value) => {
     if (value === "all") {
+      if (!canTargetAll) return;
       onChange(["all"]);
       onCriteriaChange({ allUsers: true });
       return;
@@ -127,6 +145,7 @@ const NoticeAudienceSelector = ({ audience, audienceCriteria, onChange, onCriter
     const nextFilters = {
       ...studentFilters,
       [field]: value,
+      ...(field === "schoolId" && lockedSchoolId ? { schoolId: lockedSchoolId } : {}),
       ...(field === "schoolId" ? { programId: "", year: "", semesterId: "", specializationId: "" } : {}),
       ...(field === "programId" ? { year: "", semesterId: "", specializationId: "" } : {}),
       ...(field === "year" ? { semesterId: "" } : {}),
@@ -153,6 +172,13 @@ const NoticeAudienceSelector = ({ audience, audienceCriteria, onChange, onCriter
 
     loadBaseOptions();
   }, []);
+
+  useEffect(() => {
+    if (!lockedSchoolId || studentFilters.schoolId === lockedSchoolId) return;
+    const nextFilters = { ...studentFilters, schoolId: lockedSchoolId };
+    setStudentFilters(nextFilters);
+    syncCriteria(audience, nextFilters);
+  }, [audience, lockedSchoolId, studentFilters, syncCriteria]);
 
   useEffect(() => {
     const loadProgramOptions = async () => {
@@ -189,7 +215,7 @@ const NoticeAudienceSelector = ({ audience, audienceCriteria, onChange, onCriter
     <div>
       <span className="mb-3 block text-xs font-black text-[var(--university-ink)]">Audience <span className="text-[var(--error)]">*</span></span>
       <div className="flex flex-wrap gap-2">
-        {audienceOptions.map((option) => {
+        {visibleAudienceOptions.map((option) => {
           const active = audience.includes(option.value);
 
           return (
@@ -226,8 +252,8 @@ const NoticeAudienceSelector = ({ audience, audienceCriteria, onChange, onCriter
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <label className="block">
               <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">School</span>
-              <select value={studentFilters.schoolId} onChange={(event) => updateStudentFilter("schoolId", event.target.value)} className="h-11 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-semibold outline-none focus:border-[var(--stratex-blue)]">
-                <option value="">All Schools</option>
+              <select disabled={Boolean(lockedSchoolId)} value={studentFilters.schoolId} onChange={(event) => updateStudentFilter("schoolId", event.target.value)} className="h-11 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-semibold outline-none focus:border-[var(--stratex-blue)] disabled:bg-[var(--surface-soft)] disabled:text-[var(--university-muted)]">
+                <option value="">{lockedSchoolId ? lockedSchoolLabel || "Assigned School" : "All Schools"}</option>
                 {schools.map((school) => (
                   <option key={getId(school)} value={getId(school)}>{school.name}</option>
                 ))}

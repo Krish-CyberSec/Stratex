@@ -2,9 +2,8 @@ import { Bell } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
-import { createNotice, deleteNotice, getNotices, updateNotice } from "../../../services/noticeService";
+import { deleteNotice, getNotices } from "../../../services/noticeService";
 import DeleteNoticeModal from "./components/DeleteNoticeModal";
-import NoticeFormModal from "./components/NoticeFormModal";
 import NoticeList from "./components/NoticeList";
 import NoticeSidebar from "./components/NoticeSidebar";
 import NoticeToolbar from "./components/NoticeToolbar";
@@ -57,9 +56,7 @@ const Notices = () => {
   const [modalLoading, setModalLoading] = useState(false);
   const [error, setError] = useState("");
   const [modalError, setModalError] = useState("");
-  const [editingNotice, setEditingNotice] = useState(null);
   const [deletingNotice, setDeletingNotice] = useState(null);
-  const [formOpen, setFormOpen] = useState(false);
 
   const roles = user?.roles || [];
   const canManage = roles.some((role) => ["superAdmin", "schoolAdmin", "examCell"].includes(role));
@@ -105,34 +102,6 @@ const Notices = () => {
       return acc;
     }, {});
   }, [notices]);
-
-  const handleSave = async (payload) => {
-    setModalLoading(true);
-    setModalError("");
-
-    try {
-      const data = new FormData();
-      data.append("title", payload.title);
-      data.append("content", payload.content);
-      data.append("audience", JSON.stringify(payload.audience));
-      data.append("status", payload.status);
-      if (payload.publishedAt) data.append("publishedAt", payload.publishedAt);
-      if (payload.attachment) data.append("attachment", payload.attachment);
-
-      if (editingNotice) {
-        await updateNotice(editingNotice._id, data);
-      } else {
-        await createNotice(data);
-      }
-      setFormOpen(false);
-      setEditingNotice(null);
-      await loadNotices();
-    } catch (err) {
-      setModalError(getErrorMessage(err, "Unable to save notice"));
-    } finally {
-      setModalLoading(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!deletingNotice) return;
@@ -202,9 +171,7 @@ const Notices = () => {
                 setDeletingNotice(notice);
               }}
               onEdit={(notice) => {
-                setModalError("");
-                setEditingNotice(notice);
-                setFormOpen(true);
+                navigate(`/dashboard/notices/${notice._id || notice.id}/edit`);
               }}
               onView={(notice) => navigate(`/dashboard/notices/${notice._id || notice.id}`)}
             />
@@ -240,18 +207,6 @@ const Notices = () => {
           }} />
         </div>
       </div>
-
-      <NoticeFormModal
-        error={modalError}
-        loading={modalLoading}
-        notice={editingNotice}
-        onClose={() => {
-          setFormOpen(false);
-          setEditingNotice(null);
-        }}
-        onSubmit={handleSave}
-        open={formOpen}
-      />
 
       <DeleteNoticeModal
         error={modalError}

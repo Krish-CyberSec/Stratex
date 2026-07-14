@@ -85,7 +85,11 @@ const NoticeView = () => {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[linear-gradient(135deg,#ffffff_0%,var(--background)_52%,#f5f7ff_100%)] px-3 py-5 sm:px-5 lg:px-7">
       <div className="mx-auto max-w-[1480px] space-y-5">
-        <NoticeDetailHeader notice={displayNotice} onBack={() => navigate("/dashboard/notices")} />
+        <NoticeDetailHeader
+          notice={displayNotice}
+          onBack={() => navigate("/dashboard/notices")}
+          onEdit={() => navigate(`/dashboard/notices/${displayNotice._id || id}/edit`)}
+        />
 
         {error && !notice ? (
           <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-semibold text-[var(--stratex-blue)]">

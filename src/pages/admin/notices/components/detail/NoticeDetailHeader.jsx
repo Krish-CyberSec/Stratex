@@ -1,6 +1,6 @@
-import { ArrowLeft, Download, Printer } from "lucide-react";
+import { ArrowLeft, Download, Edit3, Printer } from "lucide-react";
 
-const NoticeDetailHeader = ({ notice, onBack }) => (
+const NoticeDetailHeader = ({ notice, onBack, onEdit }) => (
   <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
     <div className="min-w-0">
       <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-[var(--university-muted)]">
@@ -26,6 +26,14 @@ const NoticeDetailHeader = ({ notice, onBack }) => (
     </div>
 
     <div className="flex gap-2">
+      <button
+        type="button"
+        onClick={onEdit}
+        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--stratex-blue)] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--stratex-blue-dark)]"
+      >
+        <Edit3 size={15} />
+        Edit Notice
+      </button>
       <button
         type="button"
         onClick={() => window.print()}
