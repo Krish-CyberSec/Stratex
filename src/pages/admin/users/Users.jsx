@@ -10,7 +10,6 @@ import {
   HelpCircle,
   History,
   List,
-  MoreVertical,
   Plus,
   RefreshCw,
   Shield,
@@ -847,21 +846,20 @@ const Users = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <PrimaryButton type="button" onClick={() => navigate("/dashboard/users/create")}>
-              <Plus size={16} />
-              Add New User
-            </PrimaryButton>
-            <SecondaryButton type="button" onClick={handleExport} disabled={!users.length}>
-              <Download size={16} />
-              Export
-            </SecondaryButton>
-            <IconButton type="button" onClick={handleRefresh} disabled={loading} title="Refresh">
-              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-            </IconButton>
-            <IconButton type="button" disabled title="More actions">
-              <MoreVertical size={16} />
-            </IconButton>
-          </div>
+  <PrimaryButton type="button" onClick={() => navigate("/dashboard/users/create")}>
+    <Plus size={16} />
+    Add New User
+  </PrimaryButton>
+
+  <SecondaryButton type="button" onClick={handleExport} disabled={!users.length}>
+    <Download size={16} />
+    Export
+  </SecondaryButton>
+
+  <IconButton type="button" onClick={handleRefresh} disabled={loading} title="Refresh">
+    <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+  </IconButton>
+</div>
         </header>
 
         <SearchBar

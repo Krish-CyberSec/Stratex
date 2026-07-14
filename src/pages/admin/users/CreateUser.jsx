@@ -10,7 +10,6 @@ import {
   GraduationCap,
   Info,
   Mail,
-  Phone,
   Save,
   Shield,
   UploadCloud,
@@ -126,13 +125,13 @@ const CreateUser = () => {
   const [subjects, setSubjects] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [photoName, setPhotoName] = useState("");
+  const [photoPreview, setPhotoPreview] = useState("");
   const [formData, setFormData] = useState({
     firstName: "",
     middleName: "",
     lastName: "",
     personalEmail: "",
     confirmPersonalEmail: "",
-    phoneNumber: "",
     countryCode: "+91",
     universityEmail: "",
     institutionId: "",
@@ -708,9 +707,14 @@ const CreateUser = () => {
                       type="file"
                       accept="image/png,image/jpeg,image/svg+xml"
                       className="sr-only"
-                      onChange={(event) =>
-                        setPhotoName(event.target.files?.[0]?.name || "")
-                      }
+                      onChange={(event) => {
+  const file = event.target.files?.[0];
+
+  if (!file) return;
+
+  setPhotoName(file.name);
+  setPhotoPreview(URL.createObjectURL(file));
+}}
                     />
                     <span className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-blue-600">
                       <UploadCloud size={24} />
@@ -794,36 +798,7 @@ const CreateUser = () => {
                         : "Confirms the setup mail destination"
                     }
                   />
-                  <div>
-                    <label className={labelClass}>Phone Number (Optional)</label>
-                    <div className="grid grid-cols-[86px_minmax(0,1fr)]">
-                      <select
-                        value={formData.countryCode}
-                        onChange={(event) =>
-                          updateField("countryCode", event.target.value)
-                        }
-                        className="h-11 rounded-l-lg border border-r-0 border-[#cfdced] bg-white px-2 text-sm font-bold outline-none focus:border-[#2563eb]"
-                      >
-                        <option>+91</option>
-                        <option>+1</option>
-                        <option>+44</option>
-                      </select>
-                      <div className="relative">
-                        <Phone
-                          size={16}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-[#53657f]"
-                        />
-                        <input
-                          value={formData.phoneNumber}
-                          onChange={(event) =>
-                            updateField("phoneNumber", event.target.value)
-                          }
-                          placeholder="98765 43210"
-                          className={`${fieldClass} rounded-l-none pl-10`}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                 
                 </div>
               </div>
             </section>
@@ -1123,19 +1098,33 @@ const CreateUser = () => {
           <aside className="space-y-4 xl:sticky xl:top-20 xl:self-start">
             <SideCard icon={User} title="User Preview" subtitle="Live preview of the user details.">
               <div className="mt-5 text-center">
-                <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-blue-50 text-blue-500">
-                  {initials ? (
-                    <span className="text-3xl font-extrabold">{initials}</span>
-                  ) : (
-                    <User size={58} fill="currentColor" />
-                  )}
-                </div>
+               <div className="mx-auto flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-blue-50">
+  {photoPreview ? (
+    <img
+      src={photoPreview}
+      alt="Profile Preview"
+      className="h-full w-full object-cover"
+    />
+  ) : initials ? (
+    <span className="text-3xl font-extrabold text-blue-500">
+      {initials}
+    </span>
+  ) : (
+    <User size={58} className="text-blue-500" />
+  )}
+</div>
                 <h2 className="mt-4 text-xl font-extrabold text-[#14264a]">
                   {fullName}
                 </h2>
-                <span className="mt-3 inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-extrabold capitalize text-green-700">
-                  {formData.status}
-                </span>
+                <span
+  className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-extrabold capitalize ${
+    formData.status === "active"
+      ? "bg-green-100 text-green-700"
+      : "bg-red-100 text-red-700"
+  }`}
+>
+  {formData.status}
+</span>
               </div>
               <PreviewRow icon={Mail} text={previewEmail} />
               <PreviewRow
