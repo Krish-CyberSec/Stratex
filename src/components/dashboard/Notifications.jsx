@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   deleteNotification,
   getNotifications,
@@ -13,6 +13,7 @@ import NotificationLoadingState from "./notifications/NotificationLoadingState";
 import NotificationPagination from "./notifications/NotificationPagination";
 import { getNotificationId } from "../../config/notificationConfig";
 import { useAuth } from "../../context/AuthContext";
+import useSocketListener from "../../hooks/useSocketListener";
 
 const initialFilters = {
   search: "",
@@ -40,6 +41,7 @@ const getWorkspaceLabel = (user) => {
 
 const Notifications = () => {
   const { user } = useAuth();
+  useSocketListener();
   const [notifications, setNotifications] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -67,7 +69,7 @@ const Notifications = () => {
     return params;
   }, [filters]);
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -86,11 +88,35 @@ const Notifications = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [query]);
 
   useEffect(() => {
     loadNotifications();
-  }, [query]);
+
+    const handleRealtime = (e) => {
+      try {
+        const payload = e.detail || e;
+        const newNotification = payload.notification;
+        if (newNotification) {
+          // preprend and refresh badge
+          setNotifications((current) => [
+            { notification: newNotification, deliveredAt: payload.deliveredAt, _id: newNotification._id },
+            ...current,
+          ]);
+          setUnreadCount((c) => c + 1);
+        }
+      } catch (err) {
+        console.error('realtime notification handler', err);
+      }
+    };
+
+    window.addEventListener('socket:notification', handleRealtime);
+
+    return () => {
+      window.removeEventListener('socket:notification', handleRealtime);
+    };
+
+  }, [loadNotifications]);
 
   const updateFilter = (key, value) => {
     setFilters((current) => ({

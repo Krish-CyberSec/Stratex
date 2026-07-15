@@ -116,7 +116,7 @@ const LoginForm = () => {
         return;
       }
 
-      login(data.user);
+      login(data.user, data.token);
       navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Login failed.");

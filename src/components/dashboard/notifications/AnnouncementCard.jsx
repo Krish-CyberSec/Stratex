@@ -6,6 +6,7 @@ import {
   getActionLabel,
   getNotificationDocument,
   getNotificationId,
+  getNotificationTargetPath,
   getNotificationTags,
   getSenderName,
   truncateText,
@@ -17,6 +18,7 @@ const AnnouncementCard = ({ clearing, item, onClear }) => {
   const notificationId = getNotificationId(item);
   const senderName = getSenderName(notification.sender);
   const tags = getNotificationTags(notification);
+  const targetPath = getNotificationTargetPath(item) || `/dashboard/notifications/${notificationId}`;
 
   return (
     <article className="rounded-3xl border border-[var(--university-border)] bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
@@ -78,8 +80,8 @@ const AnnouncementCard = ({ clearing, item, onClear }) => {
           </button>
 
           <Link
-            to={`/dashboard/notifications/${notificationId}`}
-            state={{ notificationItem: item }}
+            to={targetPath}
+            state={targetPath.includes("/dashboard/notifications") ? { notificationItem: item } : undefined}
             className="w-fit text-sm font-semibold capitalize text-[var(--success)] transition hover:text-[var(--stratex-teal-dark)]"
           >
             {getActionLabel(notification.type)}

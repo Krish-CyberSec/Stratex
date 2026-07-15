@@ -18,3 +18,8 @@ export const updateSchool = (id, data) =>
 
 export const deleteSchool = (id) =>
   axiosInstance.delete(`/schools/${id}`);
+
+export const uploadSchoolsCsv = (data) =>
+  axiosInstance.post("/schools/bulk", data, {
+    headers: data instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined,
+  });

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   XIcon,
@@ -55,7 +55,7 @@ const ProfileDropdown = ({ onClose }) => {
   const schoolLabel = getSchoolLabel(displayUser, role);
   const profileImage = getProfileImage(displayUser);
 
-  const roleLabel = useMemo(() => roleLabels[role] || "User", [role]);
+  const roleLabel = roleLabels[role] || "User";
 
   useEffect(() => {
     let isMounted = true;

@@ -95,6 +95,32 @@ export const getActionLabel = (type) => {
   return "Read full announcement";
 };
 
+export const getNotificationReferenceId = (notification = {}) =>
+  notification.reference?.id ||
+  notification.metadata?.noticeId ||
+  notification.metadata?.eventId ||
+  "";
+
+export const getNotificationTargetPath = (item = {}) => {
+  const notification = getNotificationDocument(item);
+  const referenceModel = String(notification.reference?.model || "").toLowerCase();
+  const referenceId = getNotificationReferenceId(notification);
+
+  if (!referenceId) {
+    return "";
+  }
+
+  if (notification.type === "notice" || referenceModel === "notice") {
+    return `/dashboard/notices/${referenceId}`;
+  }
+
+  if (notification.type === "event" || referenceModel === "event") {
+    return `/dashboard/events/${referenceId}`;
+  }
+
+  return "";
+};
+
 export const getNotificationTags = (notification = {}) => {
   const tags = [];
   const type = notification.type || "system";

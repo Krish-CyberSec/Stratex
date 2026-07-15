@@ -12,14 +12,26 @@ import Users from "../pages/admin/users/Users";
 import CreateUser from "../pages/admin/users/CreateUser";
 import Schools from "../pages/admin/schools/Schools";
 import CreateSchool from "../pages/admin/schools/CreateSchool";
+import BulkSchools from "../pages/admin/schools/BulkSchools";
 import EditSchool from "../pages/admin/schools/EditSchool";
 import SchoolView from "../pages/admin/schools/SchoolView";
 import Programs from "../pages/admin/programs/Programs";
+import CreateProgram from "../pages/admin/programs/CreateProgram";
+import BulkPrograms from "../pages/admin/programs/BulkPrograms";
+import ProgramView from "../pages/admin/programs/ProgramView";
 import Subjects from "../pages/admin/subjects/Subjects";
+import CreateSubject from "../pages/admin/subjects/CreateSubject";
+import BulkSubjects from "../pages/admin/subjects/BulkSubjects";
+import SubjectView from "../pages/admin/subjects/SubjectView";
+import Specializations from "../pages/admin/specializations/Specializations";
 import Notification from "../components/dashboard/Notifications";
 import NotificationDetail from "../components/dashboard/NotificationDetail";
 import Notices from "../pages/admin/notices/Notices";
+import CreateNotice from "../pages/admin/notices/CreateNotice";
+import EditNotice from "../pages/admin/notices/EditNotice";
+import NoticeView from "../pages/admin/notices/NoticeView";
 import Events from "../pages/admin/events/Events";
+import EventView from "../pages/admin/events/EventView";
 import Profile from "../pages/profile/Profile";
 
 const Navlinks = () => {
@@ -43,7 +55,7 @@ const Navlinks = () => {
         path="/dashboard"
         element={
           <ProtectedRoute
-            allowedRoles={["superAdmin", "schoolAdmin", "faculty", "student", "examCell"]}
+            allowedRoles={["superAdmin", "schoolAdmin", "faculty", "coordinator", "student", "examCell"]}
           >
             <DashboardLayout />
           </ProtectedRoute>
@@ -85,6 +97,14 @@ const Navlinks = () => {
           }
         />
         <Route
+          path="schools/bulk"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin"]}>
+              <BulkSchools />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="schools/:id/edit"
           element={
             <ProtectedRoute allowedRoles={["superAdmin"]}>
@@ -102,6 +122,30 @@ const Navlinks = () => {
         />
 
         <Route
+          path="programs/create"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
+              <CreateProgram />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="programs/bulk"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
+              <BulkPrograms />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="programs/:id"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
+              <ProgramView />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="programs"
           element={
             <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
@@ -111,10 +155,43 @@ const Navlinks = () => {
         />
 
         <Route
+          path="subjects/create"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
+              <CreateSubject />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="subjects/bulk"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
+              <BulkSubjects />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="subjects/:id"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin", "faculty", "coordinator", "student"]}>
+              <SubjectView />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="subjects"
           element={
-            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin", "faculty"]}>
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin", "faculty", "coordinator", "student"]}>
               <Subjects />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="specializations"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
+              <Specializations />
             </ProtectedRoute>
           }
         />
@@ -122,7 +199,25 @@ const Navlinks = () => {
         <Route path="notifications" element={<Notification />} />
         <Route path="notifications/:id" element={<NotificationDetail />} />
 
+        <Route
+          path="notices/create"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin", "examCell"]}>
+              <CreateNotice />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="notices/:id/edit"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin", "examCell"]}>
+              <EditNotice />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="notices/:id" element={<NoticeView />} />
         <Route path="notices" element={<Notices />} />
+        <Route path="events/:id" element={<EventView />} />
         <Route path="events" element={<Events />} />
         <Route path="profile" element={<Profile />} />
       </Route>

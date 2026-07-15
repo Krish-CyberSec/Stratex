@@ -7,6 +7,7 @@ import {
   MegaphoneIcon,
   PeopleIcon,
   OrganizationIcon,
+  VerifiedIcon
 } from "@primer/octicons-react";
 
 export const menuConfig = {
@@ -40,6 +41,11 @@ export const menuConfig = {
       name: "Subjects",
       icon: BookmarkFillIcon,
       path: "/dashboard/subjects",
+    },
+    {
+      name: "Specializations",
+      icon:  VerifiedIcon,
+      path: "/dashboard/specializations",
     },
     {
       name: "Notices",
@@ -78,6 +84,11 @@ export const menuConfig = {
       name: "Subjects",
       icon: BookmarkFillIcon,
       path: "/dashboard/subjects",
+    },
+    {
+      name: "Specializations",
+      icon:  VerifiedIcon,
+      path: "/dashboard/specializations",
     },
     {
       name: "Notices",
