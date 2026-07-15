@@ -184,7 +184,9 @@ const CreateUser = () => {
   const selectedOnlyStudent =
     formData.roles.length === 1 && formData.roles.includes("student");
 
-  const selectedSchool = schools.find((school) => school._id === formData.schoolId);
+  const selectedSchool = schools.find(
+    (school) => school._id === formData.schoolId,
+  );
   const selectedProgram = programs.find(
     (program) => program._id === formData.programId,
   );
@@ -215,7 +217,8 @@ const CreateUser = () => {
     () =>
       subjects.filter((subject) => {
         const matchesSemester =
-          !formData.semesterId || subject.semesterId?._id === formData.semesterId;
+          !formData.semesterId ||
+          subject.semesterId?._id === formData.semesterId;
         const matchesSpecialization = formData.specializationId
           ? subject.specializationId?._id === formData.specializationId ||
             !subject.specializationId
@@ -232,7 +235,9 @@ const CreateUser = () => {
       .filter(Boolean)
       .join(" ") || "John Doe";
   const previewEmail =
-    formData.universityEmail || formData.personalEmail || "john.doe@university.edu.in";
+    formData.universityEmail ||
+    formData.personalEmail ||
+    "john.doe@university.edu.in";
   const initials = [formData.firstName?.[0], formData.lastName?.[0]]
     .filter(Boolean)
     .join("")
@@ -269,7 +274,9 @@ const CreateUser = () => {
         !formData.addAssignment ||
         (formData.programId &&
           formData.semesterId &&
-          (!formData.roles.some((role) => ["faculty", "coordinator"].includes(role)) ||
+          (!formData.roles.some((role) =>
+            ["faculty", "coordinator"].includes(role),
+          ) ||
             formData.assignedSubjects.length > 0)),
     },
   ];
@@ -290,7 +297,12 @@ const CreateUser = () => {
             sortBy: "name",
             order: "asc",
           }),
-          getUsers({ page: 1, limit: 100, role: "schoolAdmin", status: "active" }),
+          getUsers({
+            page: 1,
+            limit: 100,
+            role: "schoolAdmin",
+            status: "active",
+          }),
         ]);
 
         if (!isMounted) return;
@@ -491,7 +503,9 @@ const CreateUser = () => {
         addAssignment: needsAssignment ? prev.addAssignment : false,
         isCoordinator: roles.includes("coordinator"),
         schoolId: roles.includes("superAdmin") ? "" : prev.schoolId,
-        universityEmail: roles.includes("superAdmin") ? "" : prev.universityEmail,
+        universityEmail: roles.includes("superAdmin")
+          ? ""
+          : prev.universityEmail,
         institutionId: roles.includes("superAdmin") ? "" : prev.institutionId,
         programId: needsAssignment ? prev.programId : "",
         specializationId: needsAssignment ? prev.specializationId : "",
@@ -529,7 +543,8 @@ const CreateUser = () => {
     if (formData.roles.includes("superAdmin") && formData.roles.length > 1) {
       return "Super Admin cannot be combined with other roles.";
     }
-    if (selectedRoleNeedsSchool && !formData.schoolId) return "School is required.";
+    if (selectedRoleNeedsSchool && !formData.schoolId)
+      return "School is required.";
     if (selectedRoleNeedsSchool && !formData.institutionId.trim()) {
       return "Institution ID is required.";
     }
@@ -597,8 +612,11 @@ const CreateUser = () => {
           programId: formData.programId,
           specializationId: formData.specializationId || null,
           semesterId: formData.semesterId,
-          assignedSubjects: roles.includes("student") ? [] : formData.assignedSubjects,
-          isCoordinator: roles.includes("coordinator") || formData.isCoordinator,
+          assignedSubjects: roles.includes("student")
+            ? []
+            : formData.assignedSubjects,
+          isCoordinator:
+            roles.includes("coordinator") || formData.isCoordinator,
           isPrimary: formData.isPrimary,
           status: formData.assignmentStatus,
           assignedBy: formData.assignedBy || undefined,
@@ -628,9 +646,7 @@ const CreateUser = () => {
       const message =
         response.data?.message || "User created and verification email sent.";
       navigate(backPath, {
-        state: canCreatePrivilegedUsers
-          ? { message }
-          : undefined,
+        state: canCreatePrivilegedUsers ? { message } : undefined,
       });
     } catch (err) {
       setError(getErrorMessage(err, "Unable to create user"));
@@ -668,7 +684,8 @@ const CreateUser = () => {
             Create New User
           </h1>
           <p className="mt-2 text-sm font-medium text-[#4f6482]">
-            Add a new user to the system and assign roles, academic assignments and access level.
+            Add a new user to the system and assign roles, academic assignments
+            and access level.
           </p>
         </div>
 
@@ -700,21 +717,21 @@ const CreateUser = () => {
               <div className="mt-6 grid gap-5 lg:grid-cols-[210px_minmax(0,1fr)]">
                 <div className="flex flex-col items-center lg:items-start">
                   <p className={`${labelClass} text-center lg:text-left`}>
-  Profile Photo
-</p>
+                    Profile Photo
+                  </p>
                   <label className="mx-auto flex aspect-square w-full max-w-[210px] cursor-pointer flex-col items-center justify-center rounded-full border border-dashed border-[#b8c9df] bg-white text-center transition hover:border-blue-400 hover:bg-blue-50/40 lg:mx-0">
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/svg+xml"
                       className="sr-only"
                       onChange={(event) => {
-  const file = event.target.files?.[0];
+                        const file = event.target.files?.[0];
 
-  if (!file) return;
+                        if (!file) return;
 
-  setPhotoName(file.name);
-  setPhotoPreview(URL.createObjectURL(file));
-}}
+                        setPhotoName(file.name);
+                        setPhotoPreview(URL.createObjectURL(file));
+                      }}
                     />
                     <span className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-blue-600">
                       <UploadCloud size={24} />
@@ -730,6 +747,8 @@ const CreateUser = () => {
 
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   <TextField
+                    id="firstName"
+                    name="firstName"
                     required
                     label="First Name"
                     placeholder="Enter first name"
@@ -737,12 +756,16 @@ const CreateUser = () => {
                     onChange={(value) => updateField("firstName", value)}
                   />
                   <TextField
+                    id="middleName"
+                    name="middleName"
                     label="Middle Name"
                     placeholder="Enter middle name"
                     value={formData.middleName}
                     onChange={(value) => updateField("middleName", value)}
                   />
                   <TextField
+                    id="lastName"
+                    name="lastName"
                     required
                     label="Last Name"
                     placeholder="Enter last name"
@@ -750,6 +773,8 @@ const CreateUser = () => {
                     onChange={(value) => updateField("lastName", value)}
                   />
                   <TextField
+                    id="personalEmail"
+                    name="personalEmail"
                     required
                     icon={Mail}
                     className="lg:col-span-2"
@@ -774,6 +799,8 @@ const CreateUser = () => {
                     }
                   />
                   <TextField
+                    id="confirmPersonalEmail"
+                    name="confirmPersonalEmail"
                     required
                     icon={CheckCircle2}
                     label="Confirm Personal Email"
@@ -798,7 +825,6 @@ const CreateUser = () => {
                         : "Confirms the setup mail destination"
                     }
                   />
-                 
                 </div>
               </div>
             </section>
@@ -813,6 +839,8 @@ const CreateUser = () => {
 
               <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 <SelectField
+                  id="schoolId"
+                  name="schoolId"
                   required={selectedRoleNeedsSchool}
                   label="School"
                   value={formData.schoolId}
@@ -822,9 +850,13 @@ const CreateUser = () => {
                     value: school._id,
                     label: school.name,
                   }))}
-                  placeholder={loadingOptions ? "Loading schools..." : "Select school"}
+                  placeholder={
+                    loadingOptions ? "Loading schools..." : "Select school"
+                  }
                 />
                 <TextField
+                  id="institutionId"
+                  name="institutionId"
                   required={selectedRoleNeedsSchool}
                   label="Institution ID"
                   hint="Unique ID provided by the institution"
@@ -834,6 +866,8 @@ const CreateUser = () => {
                   disabled={selectedOnlySuperAdmin}
                 />
                 <TextField
+                  id="universityEmail"
+                  name="universityEmail"
                   required={selectedRoleNeedsSchool}
                   icon={AtSign}
                   label="University Email"
@@ -841,7 +875,8 @@ const CreateUser = () => {
                     selectedOnlySuperAdmin
                       ? "Not required for Super Admin"
                       : formData.universityEmail
-                        ? isValidEmail(formData.universityEmail) && emailsAreUnique
+                        ? isValidEmail(formData.universityEmail) &&
+                          emailsAreUnique
                           ? "Valid and different from personal email"
                           : "Use a valid email different from personal email"
                         : "Required for school-linked users"
@@ -853,13 +888,16 @@ const CreateUser = () => {
                   disabled={selectedOnlySuperAdmin}
                   state={
                     formData.universityEmail
-                      ? isValidEmail(formData.universityEmail) && emailsAreUnique
+                      ? isValidEmail(formData.universityEmail) &&
+                        emailsAreUnique
                         ? "valid"
                         : "invalid"
                       : ""
                   }
                 />
                 <SelectField
+                  id="status"
+                  name="status"
                   required
                   label="Status"
                   value={formData.status}
@@ -922,8 +960,8 @@ const CreateUser = () => {
 
               <div className="mt-4 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-xs font-bold text-blue-700">
                 <Info size={16} className="mt-0.5 shrink-0" />
-                Select at least one role. Coordinator automatically includes Faculty
-                access. A verification email is sent after creation.
+                Select at least one role. Coordinator automatically includes
+                Faculty access. A verification email is sent after creation.
               </div>
             </section>
 
@@ -957,6 +995,8 @@ const CreateUser = () => {
 
               <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 <SelectField
+                  id="programId"
+                  name="programId"
                   required={selectedRoleNeedsAssignment}
                   label="Program"
                   value={formData.programId}
@@ -969,6 +1009,8 @@ const CreateUser = () => {
                   placeholder="Select program"
                 />
                 <SelectField
+                  id="specializationId"
+                  name="specializationId"
                   label="Specialization (Optional)"
                   value={formData.specializationId}
                   onChange={handleSpecializationChange}
@@ -980,6 +1022,8 @@ const CreateUser = () => {
                   placeholder="Select specialization"
                 />
                 <SelectField
+                  id="semesterId"
+                  name="semesterId"
                   required={selectedRoleNeedsAssignment}
                   label="Semester"
                   value={formData.semesterId}
@@ -993,9 +1037,9 @@ const CreateUser = () => {
                 />
 
                 <div className="sm:col-span-2">
-                  <label className={labelClass}>
+                  <p className={labelClass}>
                     Assigned Subjects (For Faculty / Coordinator)
-                  </label>
+                  </p>
                   <div className="min-h-11 rounded-lg border border-[#cfdced] bg-white px-3 py-2">
                     {filteredSubjects.length ? (
                       <div className="flex flex-wrap gap-2">
@@ -1045,6 +1089,8 @@ const CreateUser = () => {
                   onChange={(checked) => updateField("isPrimary", checked)}
                 />
                 <SelectField
+                  id="assignmentStatus"
+                  name="assignmentStatus"
                   required={selectedRoleNeedsAssignment}
                   label="Assignment Status"
                   value={formData.assignmentStatus}
@@ -1055,13 +1101,16 @@ const CreateUser = () => {
                   ]}
                 />
                 <SelectField
+                  id="assignedBy"
+                  name="assignedBy"
                   className="sm:col-span-2"
                   label="Assigned By (Optional)"
                   value={formData.assignedBy}
                   onChange={(value) => updateField("assignedBy", value)}
                   options={admins.map((admin) => ({
                     value: admin._id,
-                    label: `${admin.firstName || ""} ${admin.lastName || ""}`.trim(),
+                    label:
+                      `${admin.firstName || ""} ${admin.lastName || ""}`.trim(),
                   }))}
                   placeholder="Select admin"
                 />
@@ -1089,42 +1138,48 @@ const CreateUser = () => {
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-8 text-sm font-extrabold text-white shadow-[0_14px_30px_rgba(37,99,235,0.28)] transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <UserPlus size={16} />
-                  {isSubmitting ? "Creating and sending email..." : "Create User"}
+                  {isSubmitting
+                    ? "Creating and sending email..."
+                    : "Create User"}
                 </button>
               </div>
             </section>
           </div>
 
           <aside className="space-y-4 xl:sticky xl:top-20 xl:self-start">
-            <SideCard icon={User} title="User Preview" subtitle="Live preview of the user details.">
+            <SideCard
+              icon={User}
+              title="User Preview"
+              subtitle="Live preview of the user details."
+            >
               <div className="mt-5 text-center">
-               <div className="mx-auto flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-blue-50">
-  {photoPreview ? (
-    <img
-      src={photoPreview}
-      alt="Profile Preview"
-      className="h-full w-full object-cover"
-    />
-  ) : initials ? (
-    <span className="text-3xl font-extrabold text-blue-500">
-      {initials}
-    </span>
-  ) : (
-    <User size={58} className="text-blue-500" />
-  )}
-</div>
+                <div className="mx-auto flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-blue-50">
+                  {photoPreview ? (
+                    <img
+                      src={photoPreview}
+                      alt="Profile Preview"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : initials ? (
+                    <span className="text-3xl font-extrabold text-blue-500">
+                      {initials}
+                    </span>
+                  ) : (
+                    <User size={58} className="text-blue-500" />
+                  )}
+                </div>
                 <h2 className="mt-4 text-xl font-extrabold text-[#14264a]">
                   {fullName}
                 </h2>
                 <span
-  className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-extrabold capitalize ${
-    formData.status === "active"
-      ? "bg-green-100 text-green-700"
-      : "bg-red-100 text-red-700"
-  }`}
->
-  {formData.status}
-</span>
+                  className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-extrabold capitalize ${
+                    formData.status === "active"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {formData.status}
+                </span>
               </div>
               <PreviewRow icon={Mail} text={previewEmail} />
               <PreviewRow
@@ -1158,7 +1213,9 @@ const CreateUser = () => {
                         ? `Semester ${selectedSemester.semesterNumber}`
                         : "Semester not selected"}
                     </p>
-                    <p>{formData.assignedSubjects.length} subject(s) selected</p>
+                    <p>
+                      {formData.assignedSubjects.length} subject(s) selected
+                    </p>
                   </div>
                 ) : (
                   <>
@@ -1195,7 +1252,11 @@ const CreateUser = () => {
                       )}
                       {item.label}
                     </span>
-                    <span className={item.done ? "text-green-600" : "text-[#53657f]"}>
+                    <span
+                      className={
+                        item.done ? "text-green-600" : "text-[#53657f]"
+                      }
+                    >
                       {item.done ? "Done" : "Pending"}
                     </span>
                   </div>
@@ -1206,9 +1267,14 @@ const CreateUser = () => {
             <SideCard icon={Info} title="Important Notes">
               <ul className="mt-5 space-y-3 text-xs font-semibold leading-5 text-[#53657f]">
                 <li>Students will have no subjects assigned.</li>
-                <li>Faculty/Coordinator must be assigned to at least one subject.</li>
+                <li>
+                  Faculty/Coordinator must be assigned to at least one subject.
+                </li>
                 <li>Super Admin does not require any academic assignment.</li>
-                <li>Setup mail is sent to verify the account and create a password.</li>
+                <li>
+                  Setup mail is sent to verify the account and create a
+                  password.
+                </li>
                 <li>Personal and university emails must be unique.</li>
               </ul>
             </SideCard>
@@ -1232,6 +1298,8 @@ const SectionTitle = ({ number, icon: Icon, title, description }) => (
 );
 
 const TextField = ({
+  id,
+  name,
   label,
   value,
   onChange,
@@ -1259,7 +1327,7 @@ const TextField = ({
 
   return (
     <div className={className}>
-      <label className={labelClass}>
+      <label htmlFor={id} className={labelClass}>
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <div className="relative">
@@ -1276,6 +1344,8 @@ const TextField = ({
           />
         )}
         <input
+          id={id}
+          name={name || id}
           type={type}
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -1293,6 +1363,8 @@ const TextField = ({
 };
 
 const SelectField = ({
+  id,
+  name,
   label,
   value,
   onChange,
@@ -1304,11 +1376,13 @@ const SelectField = ({
   className = "",
 }) => (
   <div className={className}>
-    <label className={labelClass}>
+    <label htmlFor={id} className={labelClass}>
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     <div className="relative">
       <select
+        id={id}
+        name={name || id}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         disabled={disabled}
@@ -1326,7 +1400,9 @@ const SelectField = ({
         className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#53657f]"
       />
     </div>
-    {hint && <p className="mt-2 text-xs font-semibold text-[#53657f]">{hint}</p>}
+    {hint && (
+      <p className="mt-2 text-xs font-semibold text-[#53657f]">{hint}</p>
+    )}
   </div>
 );
 
@@ -1334,6 +1410,8 @@ const CheckField = ({ label, checked, onChange, disabled = false }) => (
   <label className="flex items-center gap-3 self-end pb-3 text-xs font-bold text-[#14264a]">
     <input
       type="checkbox"
+      id={label.replace(/\s+/g, "-").toLowerCase()}
+      name={label.replace(/\s+/g, "-").toLowerCase()}
       checked={checked}
       onChange={(event) => onChange(event.target.checked)}
       disabled={disabled}
@@ -1350,7 +1428,9 @@ const SideCard = ({ icon: Icon, title, subtitle, children }) => (
       <div>
         <h2 className="text-base font-extrabold text-[#14264a]">{title}</h2>
         {subtitle && (
-          <p className="mt-1 text-xs font-semibold text-[#53657f]">{subtitle}</p>
+          <p className="mt-1 text-xs font-semibold text-[#53657f]">
+            {subtitle}
+          </p>
         )}
       </div>
     </div>

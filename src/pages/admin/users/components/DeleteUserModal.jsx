@@ -69,7 +69,7 @@ const DeleteUserModal = ({ user, onClose, onDelete }) => {
       className="
         fixed
         inset-0
-        z-50
+        z-70
         flex
         items-center
         justify-center

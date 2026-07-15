@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, cloneElement } from "react";
 import { Filter, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 
 const toOption = (item) => ({
@@ -15,27 +15,40 @@ const Field = memo(({ label, children }) => (
   </label>
 ));
 
-const SelectField = memo(({ label, value, onChange, options, allLabel, disabled, includeAll = true }) => (
-  <Field label={label}>
-    <select
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      disabled={disabled}
-      className="h-10 w-full cursor-pointer rounded-xl border border-[var(--border-light)] bg-white px-3 text-xs font-bold text-[var(--university-ink)] outline-none transition focus:border-[var(--university-blue)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--university-blue)_14%,white)] disabled:cursor-not-allowed disabled:bg-[var(--surface-soft)] disabled:text-[var(--university-muted)]"
-    >
-      {includeAll && <option value="all">{allLabel}</option>}
-      {options.map((option) => {
-        const normalized = toOption(option);
+const SelectField = memo(
+  ({
+    label,
+    name,
+    value,
+    onChange,
+    options,
+    allLabel,
+    disabled,
+    includeAll = true,
+  }) => (
+    <Field label={label} id={name}>
+      <select
+        id={name}
+        name={name}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
+        className="h-10 w-full cursor-pointer rounded-xl border border-[var(--border-light)] bg-white px-3 text-xs font-bold text-[var(--university-ink)] outline-none transition focus:border-[var(--university-blue)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--university-blue)_14%,white)] disabled:cursor-not-allowed disabled:bg-[var(--surface-soft)] disabled:text-[var(--university-muted)]"
+      >
+        {includeAll && <option value="all">{allLabel}</option>}
+        {options.map((option) => {
+          const normalized = toOption(option);
 
-        return (
-          <option key={normalized.value} value={normalized.value}>
-            {normalized.label}
-          </option>
-        );
-      })}
-    </select>
-  </Field>
-));
+          return (
+            <option key={normalized.value} value={normalized.value}>
+              {normalized.label}
+            </option>
+          );
+        })}
+      </select>
+    </Field>
+  ),
+);
 
 const SearchBar = ({
   filters,
@@ -67,9 +80,13 @@ const SearchBar = ({
             <SlidersHorizontal size={17} />
           </span>
           <div>
-            <h2 className="text-sm font-black text-[var(--university-ink)]">Filters</h2>
+            <h2 className="text-sm font-black text-[var(--university-ink)]">
+              Filters
+            </h2>
             <p className="text-xs font-semibold text-[var(--university-muted)]">
-              {activeFilterCount ? `${activeFilterCount} active filter(s)` : "Search, segment, and sort users"}
+              {activeFilterCount
+                ? `${activeFilterCount} active filter(s)`
+                : "Search, segment, and sort users"}
             </p>
           </div>
         </div>
@@ -97,15 +114,17 @@ const SearchBar = ({
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-        <Field label="Search">
+        <Field label="Search" id="search">
           <div className="relative">
             <Search
               size={16}
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--university-muted)]"
             />
             <input
+              id="search"
               type="search"
               aria-label="Search users"
+              name="search"
               value={filters.search}
               onChange={(event) => updateFilter("search", event.target.value)}
               placeholder="Search by name, email, or ID..."
@@ -115,14 +134,19 @@ const SearchBar = ({
         </Field>
 
         <SelectField
+          name="role"
           label="Role"
           value={filters.role}
           onChange={(value) => updateFilter("role", value)}
-          options={roleOptions.map((role) => ({ value: role.value, label: role.label }))}
+          options={roleOptions.map((role) => ({
+            value: role.value,
+            label: role.label,
+          }))}
           allLabel="All Roles"
           disabled={loading}
         />
         <SelectField
+          name="schoolId"
           label="School"
           value={filters.schoolId}
           onChange={(value) => updateFilter("schoolId", value)}
@@ -132,6 +156,7 @@ const SearchBar = ({
         />
         <SelectField
           label="Program"
+          name="programId"
           value={filters.programId}
           onChange={(value) => updateFilter("programId", value)}
           options={programOptions}
@@ -139,6 +164,7 @@ const SearchBar = ({
           disabled={loading}
         />
         <SelectField
+          name="semesterId"
           label="Semester"
           value={filters.semesterId}
           onChange={(value) => updateFilter("semesterId", value)}
@@ -147,6 +173,7 @@ const SearchBar = ({
           disabled={loading || semesterOptions.length === 0}
         />
         <SelectField
+          name="specializationId"
           label="Specialization"
           value={filters.specializationId}
           onChange={(value) => updateFilter("specializationId", value)}
@@ -155,6 +182,7 @@ const SearchBar = ({
           disabled={loading}
         />
         <SelectField
+          name="status"
           label="Status"
           value={filters.status}
           onChange={(value) => updateFilter("status", value)}
@@ -163,6 +191,7 @@ const SearchBar = ({
           disabled={loading}
         />
         <SelectField
+          name="sortBy"
           label="Sort By"
           value={filters.sortBy}
           onChange={(value) => updateFilter("sortBy", value)}
@@ -172,6 +201,7 @@ const SearchBar = ({
           disabled={loading}
         />
         <SelectField
+          name="order"
           label="Order"
           value={filters.order}
           onChange={(value) => updateFilter("order", value)}

@@ -21,11 +21,14 @@ import styled from "styled-components";
 import { getPrograms } from "../../../services/programService";
 import { getSchools } from "../../../services/schoolService";
 import { getSpecializations } from "../../../services/specializationService";
-import { deleteUser, getUsers, updateUser } from "../../../services/userService";
+import {
+  deleteUser,
+  getUsers,
+  updateUser,
+} from "../../../services/userService";
 import Datatable from "../../../components/users/DataTable";
 import SearchBar from "../../../components/users/SearchBar";
 import DeleteUserModal from "./components/DeleteUserModal";
-import EditUserModal from "./components/EditUserModal";
 import UserDetails from "./components/UserDetails";
 
 const USERS_PER_PAGE = 10;
@@ -112,7 +115,9 @@ const getId = (value) =>
   typeof value === "object" && value !== null ? value._id || value.id : value;
 
 const getName = (value, fallback = "Not Assigned") =>
-  typeof value === "object" && value !== null ? value.name || fallback : value || fallback;
+  typeof value === "object" && value !== null
+    ? value.name || fallback
+    : value || fallback;
 
 const getSemesterLabel = (semester) => {
   if (!semester) return "Not Assigned";
@@ -135,7 +140,8 @@ const normalizeUser = (user) => {
       user.personalEmail ||
       user.email ||
       "No email",
-    school: user.schoolId?.name || user.school?.name || user.school || "Not Assigned",
+    school:
+      user.schoolId?.name || user.school?.name || user.school || "Not Assigned",
     assignment,
   };
 };
@@ -238,7 +244,11 @@ const RoleBadges = ({ roles }) => (
 
 const AcademicAssignment = ({ assignment }) => {
   if (!assignment) {
-    return <span className="text-xs font-semibold text-[var(--university-muted)]">--</span>;
+    return (
+      <span className="text-xs font-semibold text-[var(--university-muted)]">
+        --
+      </span>
+    );
   }
 
   const lines = [
@@ -249,9 +259,14 @@ const AcademicAssignment = ({ assignment }) => {
 
   return (
     <div className="min-w-0 text-xs leading-5">
-      <p className="truncate font-black text-[var(--university-ink)]">{lines[0]}</p>
+      <p className="truncate font-black text-[var(--university-ink)]">
+        {lines[0]}
+      </p>
       {lines.slice(1).map((line) => (
-        <p key={line} className="truncate font-semibold text-[var(--university-muted)]">
+        <p
+          key={line}
+          className="truncate font-semibold text-[var(--university-muted)]"
+        >
           {line}
         </p>
       ))}
@@ -264,10 +279,9 @@ const UsersTable = ({ users, onView }) => (
     <div className="border-b border-[var(--border-light)] px-4 py-4 sm:px-5">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-base font-black text-[var(--university-ink)]">Users</h2>
-          <p className="text-xs font-semibold text-[var(--university-muted)]">
-            Backend-synced accounts and access details.
-          </p>
+          <h2 className="text-base font-black text-[var(--university-ink)]">
+            Users
+          </h2>
         </div>
       </div>
     </div>
@@ -292,7 +306,8 @@ const UsersTable = ({ users, onView }) => (
             <UserAvatar user={user} />
             <div className="min-w-0">
               <p className="truncate text-sm font-black text-[var(--university-ink)]">
-                {[user.firstName, user.lastName].filter(Boolean).join(" ") || "Unnamed User"}
+                {[user.firstName, user.lastName].filter(Boolean).join(" ") ||
+                  "Unnamed User"}
               </p>
               <p className="truncate text-xs font-semibold text-[var(--university-muted)]">
                 {user.email}
@@ -355,7 +370,8 @@ const UserGrid = ({ users, onView }) => (
             <UserAvatar user={user} />
             <div className="min-w-0">
               <h3 className="truncate text-sm font-black text-[var(--university-ink)]">
-                {[user.firstName, user.lastName].filter(Boolean).join(" ") || "Unnamed User"}
+                {[user.firstName, user.lastName].filter(Boolean).join(" ") ||
+                  "Unnamed User"}
               </h3>
               <p className="mt-1 truncate text-xs font-semibold text-[var(--university-muted)]">
                 {user.email}
@@ -495,7 +511,10 @@ const DonutChart = ({ roleStats, total }) => {
 
       <div className="min-w-0 flex-1 space-y-2">
         {roleStats.map((item) => (
-          <div key={item.value} className="flex min-w-0 items-center gap-2 text-[11px]">
+          <div
+            key={item.value}
+            className="flex min-w-0 items-center gap-2 text-[11px]"
+          >
             <span
               className="h-2.5 w-2.5 shrink-0 rounded-full"
               style={{ backgroundColor: item.color }}
@@ -503,7 +522,9 @@ const DonutChart = ({ roleStats, total }) => {
             <span className="min-w-0 flex-1 truncate font-bold text-[var(--university-muted)]">
               {item.label}
             </span>
-            <span className="font-black text-[var(--university-ink)]">{item.count}</span>
+            <span className="font-black text-[var(--university-ink)]">
+              {item.count}
+            </span>
           </div>
         ))}
       </div>
@@ -616,8 +637,20 @@ const Users = () => {
     try {
       const [schoolResponse, programResponse, specializationResponse] =
         await Promise.all([
-          getSchools({ page: 1, limit: 100, status: "active", sortBy: "name", order: "asc" }),
-          getPrograms({ page: 1, limit: 100, status: "active", sortBy: "name", order: "asc" }),
+          getSchools({
+            page: 1,
+            limit: 100,
+            status: "active",
+            sortBy: "name",
+            order: "asc",
+          }),
+          getPrograms({
+            page: 1,
+            limit: 100,
+            status: "active",
+            sortBy: "name",
+            order: "asc",
+          }),
           getSpecializations(),
         ]);
 
@@ -722,7 +755,12 @@ const Users = () => {
   const handleFiltersChange = useCallback((nextFilters) => {
     setFilters(nextFilters);
   }, []);
-
+  const handleOpenUserDetails = (user) => {
+    setSelectedUser(user);
+  };
+  const handleCloseUserDetails = () => {
+    setSelectedUser(null);
+  };
   const handleRefresh = useCallback(() => {
     if (!loading) fetchUsers();
   }, [fetchUsers, loading]);
@@ -736,7 +774,14 @@ const Users = () => {
   }, []);
 
   const handleExport = useCallback(() => {
-    const headers = ["Name", "Email", "Roles", "School", "Status", "Last Login"];
+    const headers = [
+      "Name",
+      "Email",
+      "Roles",
+      "School",
+      "Status",
+      "Last Login",
+    ];
     const rows = users.map((user) => [
       [user.firstName, user.lastName].filter(Boolean).join(" "),
       user.email,
@@ -825,7 +870,9 @@ const Users = () => {
       <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--university-blue)_10%,white)] text-[var(--university-blue-dark)]">
         <UsersRound size={22} />
       </div>
-      <p className="text-sm font-black text-[var(--university-ink)]">No users found</p>
+      <p className="text-sm font-black text-[var(--university-ink)]">
+        No users found
+      </p>
       <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[var(--university-muted)]">
         Try changing filters or create a new user.
       </p>
@@ -846,20 +893,32 @@ const Users = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-  <PrimaryButton type="button" onClick={() => navigate("/dashboard/users/create")}>
-    <Plus size={16} />
-    Add New User
-  </PrimaryButton>
+            <PrimaryButton
+              type="button"
+              onClick={() => navigate("/dashboard/users/create")}
+            >
+              <Plus size={16} />
+              Add New User
+            </PrimaryButton>
 
-  <SecondaryButton type="button" onClick={handleExport} disabled={!users.length}>
-    <Download size={16} />
-    Export
-  </SecondaryButton>
+            <SecondaryButton
+              type="button"
+              onClick={handleExport}
+              disabled={!users.length}
+            >
+              <Download size={16} />
+              Export
+            </SecondaryButton>
 
-  <IconButton type="button" onClick={handleRefresh} disabled={loading} title="Refresh">
-    <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-  </IconButton>
-</div>
+            <IconButton
+              type="button"
+              onClick={handleRefresh}
+              disabled={loading}
+              title="Refresh"
+            >
+              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            </IconButton>
+          </div>
         </header>
 
         <SearchBar
@@ -934,7 +993,9 @@ const Users = () => {
                   <div
                     key={index}
                     className={`animate-pulse rounded-xl bg-[var(--surface-soft)] ${
-                      viewMode === "grid" ? "h-64 border border-[var(--border-light)] bg-white" : "mb-3 h-16 last:mb-0"
+                      viewMode === "grid"
+                        ? "h-64 border border-[var(--border-light)] bg-white"
+                        : "mb-3 h-16 last:mb-0"
                     }`}
                   />
                 ))}
@@ -969,9 +1030,21 @@ const Users = () => {
             <SidebarCard icon={BarChart3} title="User Overview">
               <div className="space-y-3">
                 <StatLine label="Total Users" value={stats.total} />
-                <StatLine label="Active Users" value={stats.active} tone="text-[var(--success)]" />
-                <StatLine label="Inactive Users" value={stats.inactive} tone="text-amber-700" />
-                <StatLine label="Suspended Users" value={stats.suspended} tone="text-[var(--error)]" />
+                <StatLine
+                  label="Active Users"
+                  value={stats.active}
+                  tone="text-[var(--success)]"
+                />
+                <StatLine
+                  label="Inactive Users"
+                  value={stats.inactive}
+                  tone="text-amber-700"
+                />
+                <StatLine
+                  label="Suspended Users"
+                  value={stats.suspended}
+                  tone="text-[var(--error)]"
+                />
               </div>
             </SidebarCard>
 
@@ -1017,7 +1090,9 @@ const Users = () => {
 
             <SidebarCard icon={HelpCircle} title="Help & Support">
               <div className="rounded-xl bg-[var(--surface-soft)] p-4">
-                <p className="text-sm font-black text-[var(--university-ink)]">Need help managing users?</p>
+                <p className="text-sm font-black text-[var(--university-ink)]">
+                  Need help managing users?
+                </p>
                 <p className="mt-2 text-xs font-semibold leading-5 text-[var(--university-muted)]">
                   Visit the support page for account and access guidance.
                 </p>
@@ -1036,17 +1111,13 @@ const Users = () => {
       </div>
 
       <UserDetails
+        isOpen={Boolean(selectedUser)}
         user={selectedUser}
-        onClose={() => setSelectedUser(null)}
-        onEdit={setEditingUser}
+        onClose={handleCloseUserDetails}
+        onEdit={handleUpdateUser}
         onDelete={setDeletingUser}
       />
-      <EditUserModal
-        user={editingUser}
-        onClose={() => setEditingUser(null)}
-        onSave={handleUpdateUser}
-        loading={actionLoading}
-      />
+
       <DeleteUserModal
         user={deletingUser}
         onClose={() => setDeletingUser(null)}
