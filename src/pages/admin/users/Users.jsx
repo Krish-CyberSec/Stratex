@@ -18,9 +18,11 @@ import {
   UsersRound,
 } from "lucide-react";
 import styled from "styled-components";
+
 import { getPrograms } from "../../../services/programService";
 import { getSchools } from "../../../services/schoolService";
 import { getSpecializations } from "../../../services/specializationService";
+import axiosInstance from "../../../utils/axiosInstance";
 import {
   deleteUser,
   getUsers,
@@ -574,11 +576,12 @@ const Users = () => {
   const [schools, setSchools] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [specializations, setSpecializations] = useState([]);
+  const [semesterOptions, setSemesterOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [optionsLoading, setOptionsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [actionLoading, setActionLoading] = useState(false);
+
   const [selectedUser, setSelectedUser] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
@@ -594,26 +597,6 @@ const Users = () => {
     suspended: 0,
     roles: roleOptions.map((role) => ({ ...role, count: 0 })),
   });
-
-  const semesterOptions = useMemo(() => {
-    const seen = new Map();
-
-    users.forEach((user) => {
-      user.academicAssignments?.forEach((assignment) => {
-        const semester = assignment.semesterId;
-        const id = getId(semester);
-
-        if (id && !seen.has(id)) {
-          seen.set(id, {
-            value: id,
-            label: getSemesterLabel(semester),
-          });
-        }
-      });
-    });
-
-    return [...seen.values()].sort((a, b) => a.label.localeCompare(b.label));
-  }, [users]);
 
   const activeFilterCount = useMemo(
     () =>
@@ -635,34 +618,67 @@ const Users = () => {
     setOptionsLoading(true);
 
     try {
-      const [schoolResponse, programResponse, specializationResponse] =
-        await Promise.all([
-          getSchools({
+      const schoolFilter =
+        filters.schoolId === "all" ? undefined : filters.schoolId;
+      const programFilter =
+        filters.programId === "all" ? undefined : filters.programId;
+
+      const [
+        schoolResponse,
+        programResponse,
+        specializationResponse,
+        semesterResponse,
+      ] = await Promise.all([
+        getSchools({
+          page: 1,
+          limit: 100,
+          status: "active",
+          sortBy: "name",
+          order: "asc",
+        }),
+        getPrograms({
+          page: 1,
+          limit: 100,
+          schoolId: schoolFilter,
+          status: "active",
+          sortBy: "name",
+          order: "asc",
+        }),
+        getSpecializations({
+          page: 1,
+          limit: 100,
+          programId: programFilter,
+          status: "active",
+          sortBy: "name",
+          order: "asc",
+        }),
+        axiosInstance.get("/semesters", {
+          params: {
             page: 1,
             limit: 100,
             status: "active",
-            sortBy: "name",
+            sortBy: "semesterNumber",
             order: "asc",
-          }),
-          getPrograms({
-            page: 1,
-            limit: 100,
-            status: "active",
-            sortBy: "name",
-            order: "asc",
-          }),
-          getSpecializations(),
-        ]);
+          },
+        }),
+      ]);
+
+      const semesters = unwrapList(semesterResponse).map((semester) => ({
+        value: semester._id || semester.id,
+        label:
+          semester.name || `Semester ${semester.semesterNumber || ""}`.trim(),
+      }));
 
       setSchools(unwrapList(schoolResponse));
       setPrograms(unwrapList(programResponse));
       setSpecializations(unwrapList(specializationResponse));
+      setSemesterOptions(semesters);
     } catch (err) {
       setError(getErrorMessage(err, "Unable to load filter options"));
     } finally {
       setOptionsLoading(false);
     }
-  }, []);
+  }, [filters.schoolId, filters.programId]);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -753,14 +769,28 @@ const Users = () => {
   }, [fetchUsers, location.pathname, location.state, navigate]);
 
   const handleFiltersChange = useCallback((nextFilters) => {
-    setFilters(nextFilters);
+    setFilters((prev) => {
+      const updated = { ...nextFilters };
+
+      if (updated.schoolId !== prev.schoolId) {
+        updated.programId = "all";
+        updated.specializationId = "all";
+      } else if (updated.programId !== prev.programId) {
+        updated.specializationId = "all";
+      }
+
+      return updated;
+    });
   }, []);
+
   const handleOpenUserDetails = (user) => {
     setSelectedUser(user);
   };
+
   const handleCloseUserDetails = () => {
     setSelectedUser(null);
   };
+
   const handleRefresh = useCallback(() => {
     if (!loading) fetchUsers();
   }, [fetchUsers, loading]);
@@ -807,7 +837,6 @@ const Users = () => {
   }, [users]);
 
   const handleUpdateUser = async (updatedUser) => {
-    setActionLoading(true);
     setError("");
 
     try {
@@ -815,8 +844,11 @@ const Users = () => {
         firstName: updatedUser.firstName?.trim(),
         lastName: updatedUser.lastName?.trim(),
         personalEmail: updatedUser.personalEmail?.trim() || undefined,
-        status: updatedUser.status,
       };
+
+      if (["active", "inactive"].includes(updatedUser.status)) {
+        payload.status = updatedUser.status;
+      }
 
       await updateUser(updatedUser._id, payload);
       setEditingUser(null);
@@ -832,13 +864,10 @@ const Users = () => {
       const message = getErrorMessage(err, "Unable to update user");
       setError(message);
       throw new Error(message, { cause: err });
-    } finally {
-      setActionLoading(false);
     }
   };
 
   const handleDeleteUser = async (userId) => {
-    setActionLoading(true);
     setError("");
 
     try {
@@ -860,8 +889,6 @@ const Users = () => {
       const message = getErrorMessage(err, "Unable to delete user");
       setError(message);
       throw new Error(message, { cause: err });
-    } finally {
-      setActionLoading(false);
     }
   };
 
@@ -907,7 +934,7 @@ const Users = () => {
               disabled={!users.length}
             >
               <Download size={16} />
-              Export
+              Export This Page
             </SecondaryButton>
 
             <IconButton
@@ -925,7 +952,6 @@ const Users = () => {
           filters={filters}
           onChange={handleFiltersChange}
           onReset={handleReset}
-          onApply={fetchUsers}
           roleOptions={roleOptions}
           schoolOptions={schools}
           programOptions={programs}
@@ -1069,7 +1095,7 @@ const Users = () => {
                 <QuickAction
                   icon={Download}
                   label="Export Users"
-                  description="Download current results"
+                  description="Download this page of results"
                   onClick={handleExport}
                   disabled={!users.length}
                 />
@@ -1122,7 +1148,6 @@ const Users = () => {
         user={deletingUser}
         onClose={() => setDeletingUser(null)}
         onDelete={handleDeleteUser}
-        loading={actionLoading}
       />
     </div>
   );

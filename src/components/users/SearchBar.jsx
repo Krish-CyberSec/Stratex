@@ -1,10 +1,24 @@
-import { memo, useCallback, cloneElement } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { Filter, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 
 const toOption = (item) => ({
   value: item._id || item.id || item.value,
   label: item.name || item.label || "Untitled",
 });
+
+const useDebouncedValue = (value, delay = 300) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => window.clearTimeout(timer);
+  }, [value, delay]);
+
+  return debouncedValue;
+};
 
 const Field = memo(({ label, children }) => (
   <label className="min-w-0">
@@ -54,7 +68,6 @@ const SearchBar = ({
   filters,
   onChange,
   onReset,
-  onApply,
   roleOptions = [],
   schoolOptions = [],
   programOptions = [],
@@ -65,12 +78,34 @@ const SearchBar = ({
   loading = false,
   activeFilterCount = 0,
 }) => {
+  const [searchInput, setSearchInput] = useState(filters.search || "");
+  const debouncedSearch = useDebouncedValue(searchInput, 300);
+
   const updateFilter = useCallback(
     (key, value) => {
       onChange({ ...filters, [key]: value });
     },
     [filters, onChange],
   );
+
+  useEffect(() => {
+    setSearchInput(filters.search || "");
+  }, [filters.search]);
+
+  useEffect(() => {
+    if (debouncedSearch !== (filters.search || "")) {
+      updateFilter("search", debouncedSearch);
+    }
+  }, [debouncedSearch, filters.search, updateFilter]);
+
+  const handleReset = useCallback(() => {
+    setSearchInput("");
+    onReset?.();
+  }, [onReset]);
+
+  const handleApply = useCallback(() => {
+    onChange({ ...filters, search: searchInput });
+  }, [filters, onChange, searchInput]);
 
   return (
     <section className="rounded-2xl border border-[var(--border-light)] bg-white p-4 shadow-sm">
@@ -94,7 +129,7 @@ const SearchBar = ({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={onReset}
+            onClick={handleReset}
             disabled={loading}
             className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--border-light)] bg-white px-4 text-xs font-black text-[var(--university-ink)] transition hover:bg-[var(--background)] disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -103,7 +138,7 @@ const SearchBar = ({
           </button>
           <button
             type="button"
-            onClick={onApply}
+            onClick={handleApply}
             disabled={loading}
             className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[var(--university-blue)] px-4 text-xs font-black text-white transition hover:bg-[var(--university-blue-dark)] disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -125,8 +160,8 @@ const SearchBar = ({
               type="search"
               aria-label="Search users"
               name="search"
-              value={filters.search}
-              onChange={(event) => updateFilter("search", event.target.value)}
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
               placeholder="Search by name, email, or ID..."
               className="h-10 w-full rounded-xl border border-[var(--border-light)] bg-white pl-10 pr-3 text-xs font-bold text-[var(--university-ink)] outline-none transition placeholder:text-[var(--university-muted)] focus:border-[var(--university-blue)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--university-blue)_14%,white)]"
             />

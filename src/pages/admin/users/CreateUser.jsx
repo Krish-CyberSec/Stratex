@@ -10,8 +10,10 @@ import {
   GraduationCap,
   Info,
   Mail,
+  Plus,
   Save,
   Shield,
+  Trash2,
   UploadCloud,
   User,
   UserCog,
@@ -25,10 +27,18 @@ import { getPrograms } from "../../../services/programService";
 import axiosInstance from "../../../utils/axiosInstance";
 import { useAuth } from "../../../context/AuthContext";
 
+const DRAFT_KEY = "stratex-create-user-draft";
+
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.message || fallback;
 
-const unwrapList = (response) => response.data?.data || [];
+const unwrapList = (response) =>
+  response?.data?.data ||
+  response?.data?.schools ||
+  response?.data?.programs ||
+  response?.data?.specializations ||
+  response?.data ||
+  [];
 const emailRegex =
   /^[A-Za-z0-9](?:[A-Za-z0-9._%+-]{0,62}[A-Za-z0-9])?@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/;
 
@@ -44,7 +54,21 @@ const isValidEmail = (email) => {
 
 const normalizeEmail = (email) => email.trim().toLowerCase();
 
+let assignmentRowCounter = 0;
+const createAssignmentRow = () => ({
+  localId: `row-${Date.now()}-${assignmentRowCounter++}`,
+  programId: "",
+  specializationId: "",
+  semesterId: "",
+  assignedSubjects: [],
+  isCoordinator: false,
+  isPrimary: false,
+  status: "inactive",
+  assignedBy: "",
+});
+
 const rolesThatNeedAssignments = ["student", "faculty", "coordinator"];
+const assignmentBlockedRoles = ["schoolAdmin", "examCell", "superAdmin"];
 const roleCards = [
   {
     value: "student",
@@ -109,6 +133,203 @@ const labelClass = "mb-2 block text-xs font-bold text-[#14264a]";
 const cardClass =
   "rounded-xl border border-[#dfe7f3] bg-white shadow-[0_8px_24px_rgba(20,38,74,0.06)]";
 
+const createDefaultFormData = () => ({
+  firstName: "",
+  middleName: "",
+  lastName: "",
+  personalEmail: "",
+  confirmPersonalEmail: "",
+  countryCode: "+91",
+  universityEmail: "",
+  institutionId: "",
+  schoolId: "",
+  roles: [],
+  status: "active",
+  addAssignment: true,
+  academicAssignments: [{ ...createAssignmentRow(), isPrimary: true }],
+});
+
+const isAllowedRoleForCurrentUser = (role, canCreatePrivilegedUsers) => {
+  if (canCreatePrivilegedUsers) return true;
+  return ["student", "faculty", "coordinator"].includes(role);
+};
+const validateFormData = (formData = {}, options = {}) => {
+  const { canCreatePrivilegedUsers = false } = options;
+  const data = formData || {};
+
+  const roles = Array.isArray(data.roles) ? data.roles : [];
+  const academicAssignments = Array.isArray(data.academicAssignments)
+    ? data.academicAssignments
+    : [];
+  const firstName = String(data.firstName ?? "").trim();
+  const lastName = String(data.lastName ?? "").trim();
+  const personalEmail = String(data.personalEmail ?? "").trim();
+  const confirmPersonalEmail = String(data.confirmPersonalEmail ?? "").trim();
+  const universityEmail = String(data.universityEmail ?? "").trim();
+  const institutionId = String(data.institutionId ?? "").trim();
+  const schoolId = String(data.schoolId ?? "").trim();
+
+  const invalidRoles = roles.filter(
+    (role) => !isAllowedRoleForCurrentUser(role, canCreatePrivilegedUsers),
+  );
+
+  if (invalidRoles.length) {
+    return `Role(s) not allowed for your account: ${invalidRoles.join(", ")}`;
+  }
+
+  const hasAssignmentRequiringRole = roles.some((role) =>
+    rolesThatNeedAssignments.includes(role),
+  );
+  const hasAssignmentBlockedRole = roles.some((role) =>
+    assignmentBlockedRoles.includes(role),
+  );
+
+  const selectedRoleNeedsSchool =
+    roles.length > 0 && !roles.includes("superAdmin");
+  const selectedRoleNeedsAssignment =
+    hasAssignmentRequiringRole && !hasAssignmentBlockedRole;
+  const selectedFacultyLikeRole = roles.some((role) =>
+    ["faculty", "coordinator"].includes(role),
+  );
+  const requiresSingleAssignment = roles.includes("student");
+  const personalEmailVerified =
+    isValidEmail(personalEmail) &&
+    normalizeEmail(personalEmail) === normalizeEmail(confirmPersonalEmail);
+  const universityEmailReady =
+    !selectedRoleNeedsSchool || isValidEmail(universityEmail);
+  const emailsAreUnique =
+    !selectedRoleNeedsSchool ||
+    normalizeEmail(personalEmail) !== normalizeEmail(universityEmail);
+
+  if (!firstName) return "First name is required.";
+  if (!lastName) return "Last name is required.";
+  if (!personalEmail) return "Personal email is required.";
+  if (!isValidEmail(personalEmail)) {
+    return "Please enter a valid personal email address.";
+  }
+  if (!confirmPersonalEmail) {
+    return "Confirm personal email before creating the user.";
+  }
+  if (!personalEmailVerified) {
+    return "Personal email confirmation must match a valid personal email.";
+  }
+  if (!roles.length) return "Select at least one role.";
+  if (roles.includes("superAdmin") && roles.length > 1) {
+    return "Super Admin cannot be combined with other roles.";
+  }
+  if (hasAssignmentBlockedRole && hasAssignmentRequiringRole) {
+    return "School Admin, Exam Cell, and Super Admin roles cannot be combined with Student, Faculty, or Coordinator roles.";
+  }
+  if (selectedRoleNeedsSchool && !schoolId) return "School is required.";
+  if (selectedRoleNeedsSchool && !institutionId.trim()) {
+    return "Institution ID is required.";
+  }
+  if (selectedRoleNeedsSchool && !universityEmail.trim()) {
+    return "University email is required.";
+  }
+  if (universityEmail.trim() && !isValidEmail(universityEmail)) {
+    return "Please enter a valid university email address.";
+  }
+  if (
+    selectedRoleNeedsSchool &&
+    normalizeEmail(personalEmail) === normalizeEmail(universityEmail)
+  ) {
+    return "Personal and university email must be different.";
+  }
+  if (selectedRoleNeedsAssignment && !data.addAssignment) {
+    return "Academic assignment is required for the selected role.";
+  }
+
+  if (selectedRoleNeedsAssignment && !data.addAssignment) {
+    return "Academic assignment is required for the selected role.";
+  }
+
+  if (selectedRoleNeedsAssignment && data.addAssignment) {
+    const rows = academicAssignments;
+
+    if (requiresSingleAssignment && rows.length > 1) {
+      return "Students must have exactly one academic assignment.";
+    }
+
+    for (let index = 0; index < rows.length; index += 1) {
+      const row = rows[index];
+      const rowLabel = rows.length > 1 ? ` (assignment ${index + 1})` : "";
+
+      if (!row.programId) {
+        return `Program is required for academic assignment${rowLabel}.`;
+      }
+      if (!row.semesterId) {
+        return `Semester is required for academic assignment${rowLabel}.`;
+      }
+      if (selectedFacultyLikeRole && row.assignedSubjects.length === 0) {
+        return `Faculty and coordinator users must be assigned to at least one subject${rowLabel}.`;
+      }
+    }
+
+    if (rows.filter((row) => row.isPrimary).length !== 1) {
+      return "Exactly one academic assignment must be marked as primary.";
+    }
+
+    const duplicateKey = (row) =>
+      [row.programId, row.specializationId || "", row.semesterId].join("|");
+    const seenKeys = new Set();
+
+    for (const row of rows) {
+      const key = duplicateKey(row);
+      if (seenKeys.has(key)) {
+        return "Duplicate academic assignments are not allowed (same program, specialization and semester).";
+      }
+      seenKeys.add(key);
+    }
+  }
+
+  return "";
+};
+
+const readDraftFromStorage = (canCreatePrivilegedUsers = false) => {
+  if (typeof window === "undefined") {
+    return createDefaultFormData();
+  }
+
+  try {
+    const raw = window.localStorage.getItem(DRAFT_KEY);
+    if (!raw) {
+      return createDefaultFormData();
+    }
+
+    const parsed = JSON.parse(raw);
+
+    const normalizedDraft = {
+      ...createDefaultFormData(),
+      ...parsed,
+      roles: Array.isArray(parsed.roles) ? parsed.roles : [],
+      academicAssignments:
+        Array.isArray(parsed.academicAssignments) &&
+        parsed.academicAssignments.length
+          ? parsed.academicAssignments.map((row) => ({
+              ...createAssignmentRow(),
+              ...row,
+              localId: row.localId || `row-${Date.now()}-${Math.random()}`,
+            }))
+          : [{ ...createAssignmentRow(), isPrimary: true }],
+    };
+
+    const validationMessage = validateFormData(normalizedDraft, {
+      canCreatePrivilegedUsers,
+    });
+
+    if (validationMessage) {
+      window.localStorage.removeItem(DRAFT_KEY);
+      return createDefaultFormData();
+    }
+
+    return normalizedDraft;
+  } catch {
+    window.localStorage.removeItem(DRAFT_KEY);
+    return createDefaultFormData();
+  }
+};
+
 const CreateUser = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -121,33 +342,15 @@ const CreateUser = () => {
   const [loadingOptions, setLoadingOptions] = useState(false);
   const [schools, setSchools] = useState([]);
   const [programs, setPrograms] = useState([]);
-  const [specializations, setSpecializations] = useState([]);
-  const [subjects, setSubjects] = useState([]);
+  const [assignmentOptionsByProgram, setAssignmentOptionsByProgram] = useState(
+    {},
+  );
   const [admins, setAdmins] = useState([]);
   const [photoName, setPhotoName] = useState("");
   const [photoPreview, setPhotoPreview] = useState("");
-  const [formData, setFormData] = useState({
-    firstName: "",
-    middleName: "",
-    lastName: "",
-    personalEmail: "",
-    confirmPersonalEmail: "",
-    countryCode: "+91",
-    universityEmail: "",
-    institutionId: "",
-    schoolId: "",
-    roles: [],
-    status: "active",
-    addAssignment: true,
-    programId: "",
-    specializationId: "",
-    semesterId: "",
-    assignedSubjects: [],
-    isCoordinator: false,
-    isPrimary: true,
-    assignmentStatus: "active",
-    assignedBy: "",
-  });
+  const [formData, setFormData] = useState(() =>
+    readDraftFromStorage(canCreatePrivilegedUsers),
+  );
 
   const allowedRoleCards = useMemo(
     () =>
@@ -161,9 +364,9 @@ const CreateUser = () => {
 
   const selectedRoleNeedsSchool =
     formData.roles.length > 0 && !formData.roles.includes("superAdmin");
-  const selectedRoleNeedsAssignment = formData.roles.some((role) =>
-    rolesThatNeedAssignments.includes(role),
-  );
+  const selectedRoleNeedsAssignment =
+    formData.roles.some((role) => rolesThatNeedAssignments.includes(role)) &&
+    !formData.roles.some((role) => assignmentBlockedRoles.includes(role));
   const selectedOnlySuperAdmin =
     formData.roles.length === 1 && formData.roles.includes("superAdmin");
   const personalEmailVerified =
@@ -187,21 +390,22 @@ const CreateUser = () => {
   const selectedSchool = schools.find(
     (school) => school._id === formData.schoolId,
   );
-  const selectedProgram = programs.find(
-    (program) => program._id === formData.programId,
-  );
-  const selectedSpecialization = specializations.find(
-    (specialization) => specialization._id === formData.specializationId,
-  );
-  const selectedSemester = subjects
-    .map((subject) => subject.semesterId)
-    .filter(Boolean)
-    .find((semester) => semester._id === formData.semesterId);
 
-  const semesterOptions = useMemo(() => {
+  const requiresSingleAssignment = formData.roles.includes("student");
+  const canAddMultipleAssignments =
+    selectedRoleNeedsAssignment && !requiresSingleAssignment;
+
+  const getRowOptions = (programId) =>
+    assignmentOptionsByProgram[programId] || {
+      specializations: [],
+      subjects: [],
+    };
+
+  const getSemesterOptionsForRow = (programId) => {
+    const { subjects: rowSubjects } = getRowOptions(programId);
     const seen = new Map();
 
-    subjects.forEach((subject) => {
+    rowSubjects.forEach((subject) => {
       const semester = subject.semesterId;
       if (semester?._id && !seen.has(semester._id)) {
         seen.set(semester._id, semester);
@@ -211,23 +415,22 @@ const CreateUser = () => {
     return [...seen.values()].sort(
       (a, b) => Number(a.semesterNumber || 0) - Number(b.semesterNumber || 0),
     );
-  }, [subjects]);
+  };
 
-  const filteredSubjects = useMemo(
-    () =>
-      subjects.filter((subject) => {
-        const matchesSemester =
-          !formData.semesterId ||
-          subject.semesterId?._id === formData.semesterId;
-        const matchesSpecialization = formData.specializationId
-          ? subject.specializationId?._id === formData.specializationId ||
-            !subject.specializationId
-          : !subject.specializationId;
+  const getFilteredSubjectsForRow = (row) => {
+    const { subjects: rowSubjects } = getRowOptions(row.programId);
 
-        return matchesSemester && matchesSpecialization;
-      }),
-    [formData.semesterId, formData.specializationId, subjects],
-  );
+    return rowSubjects.filter((subject) => {
+      const matchesSemester =
+        !row.semesterId || subject.semesterId?._id === row.semesterId;
+      const matchesSpecialization = row.specializationId
+        ? subject.specializationId?._id === row.specializationId ||
+          !subject.specializationId
+        : !subject.specializationId;
+
+      return matchesSemester && matchesSpecialization;
+    });
+  };
 
   const fullName =
     [formData.firstName, formData.middleName, formData.lastName]
@@ -272,12 +475,14 @@ const CreateUser = () => {
       done:
         !selectedRoleNeedsAssignment ||
         !formData.addAssignment ||
-        (formData.programId &&
-          formData.semesterId &&
-          (!formData.roles.some((role) =>
-            ["faculty", "coordinator"].includes(role),
-          ) ||
-            formData.assignedSubjects.length > 0)),
+        (formData.academicAssignments.every(
+          (row) =>
+            row.programId &&
+            row.semesterId &&
+            (!selectedFacultyLikeRole || row.assignedSubjects.length > 0),
+        ) &&
+          formData.academicAssignments.filter((row) => row.isPrimary).length ===
+            1),
     },
   ];
 
@@ -374,42 +579,67 @@ const CreateUser = () => {
   useEffect(() => {
     let isMounted = true;
 
-    const loadAcademicOptions = async () => {
-      if (!formData.programId) {
-        setSpecializations([]);
-        setSubjects([]);
-        return;
-      }
+    const programIds = [
+      ...new Set(
+        formData.academicAssignments
+          .map((row) => row.programId)
+          .filter(Boolean),
+      ),
+    ];
+    const missingProgramIds = programIds.filter(
+      (programId) => !assignmentOptionsByProgram[programId],
+    );
 
+    if (!missingProgramIds.length) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    const loadAcademicOptions = async () => {
       try {
-        const [specializationsResponse, subjectsResponse] = await Promise.all([
-          axiosInstance.get("/specializations", {
-            params: {
-              page: 1,
-              limit: 100,
-              programId: formData.programId,
-              status: "active",
-              sortBy: "name",
-              order: "asc",
-            },
+        const entries = await Promise.all(
+          missingProgramIds.map(async (programId) => {
+            const [specializationsResponse, subjectsResponse] =
+              await Promise.all([
+                axiosInstance.get("/specializations", {
+                  params: {
+                    page: 1,
+                    limit: 100,
+                    programId,
+                    status: "active",
+                    sortBy: "name",
+                    order: "asc",
+                  },
+                }),
+                axiosInstance.get("/subjects", {
+                  params: {
+                    page: 1,
+                    limit: 200,
+                    schoolId: formData.schoolId || undefined,
+                    programId,
+                    status: "active",
+                    sortBy: "name",
+                    order: "asc",
+                  },
+                }),
+              ]);
+
+            return [
+              programId,
+              {
+                specializations: unwrapList(specializationsResponse),
+                subjects: unwrapList(subjectsResponse),
+              },
+            ];
           }),
-          axiosInstance.get("/subjects", {
-            params: {
-              page: 1,
-              limit: 200,
-              schoolId: formData.schoolId || undefined,
-              programId: formData.programId,
-              specializationId: formData.specializationId || undefined,
-              status: "active",
-              sortBy: "name",
-              order: "asc",
-            },
-          }),
-        ]);
+        );
 
         if (isMounted) {
-          setSpecializations(unwrapList(specializationsResponse));
-          setSubjects(unwrapList(subjectsResponse));
+          setAssignmentOptionsByProgram((prev) => ({
+            ...prev,
+            ...Object.fromEntries(entries),
+          }));
         }
       } catch (err) {
         if (isMounted) {
@@ -423,7 +653,11 @@ const CreateUser = () => {
     return () => {
       isMounted = false;
     };
-  }, [formData.programId, formData.schoolId, formData.specializationId]);
+  }, [
+    formData.academicAssignments,
+    formData.schoolId,
+    assignmentOptionsByProgram,
+  ]);
 
   const updateField = (name, value) => {
     setFormData((prev) => ({
@@ -439,37 +673,89 @@ const CreateUser = () => {
     setFormData((prev) => ({
       ...prev,
       schoolId: value,
-      programId: "",
-      specializationId: "",
-      semesterId: "",
-      assignedSubjects: [],
+      academicAssignments: prev.academicAssignments.map((row) => ({
+        ...row,
+        programId: "",
+        specializationId: "",
+        semesterId: "",
+        assignedSubjects: [],
+      })),
     }));
   };
 
-  const handleProgramChange = (value) => {
+  const updateAssignmentRow = (localId, patch) => {
     setFormData((prev) => ({
       ...prev,
+      academicAssignments: prev.academicAssignments.map((row) =>
+        row.localId === localId ? { ...row, ...patch } : row,
+      ),
+    }));
+  };
+
+  const handleRowProgramChange = (localId, value) => {
+    updateAssignmentRow(localId, {
       programId: value,
       specializationId: "",
       semesterId: "",
       assignedSubjects: [],
-    }));
+    });
   };
 
-  const handleSpecializationChange = (value) => {
-    setFormData((prev) => ({
-      ...prev,
+  const handleRowSpecializationChange = (localId, value) => {
+    updateAssignmentRow(localId, {
       specializationId: value,
       semesterId: "",
       assignedSubjects: [],
+    });
+  };
+
+  const handleRowSemesterChange = (localId, value) => {
+    updateAssignmentRow(localId, {
+      semesterId: value,
+      assignedSubjects: [],
+    });
+  };
+
+  const addAssignmentRow = () => {
+    setFormData((prev) => ({
+      ...prev,
+      academicAssignments: [...prev.academicAssignments, createAssignmentRow()],
     }));
   };
 
-  const handleSemesterChange = (value) => {
+  const removeAssignmentRow = (localId) => {
+    setFormData((prev) => {
+      const remaining = prev.academicAssignments.filter(
+        (row) => row.localId !== localId,
+      );
+
+      if (!remaining.length) return prev;
+
+      const removedWasPrimary = prev.academicAssignments.find(
+        (row) => row.localId === localId,
+      )?.isPrimary;
+      const hasPrimary = remaining.some((row) => row.isPrimary);
+
+      return {
+        ...prev,
+        academicAssignments:
+          removedWasPrimary && !hasPrimary
+            ? remaining.map((row, index) => ({
+                ...row,
+                isPrimary: index === 0,
+              }))
+            : remaining,
+      };
+    });
+  };
+
+  const setPrimaryAssignmentRow = (localId) => {
     setFormData((prev) => ({
       ...prev,
-      semesterId: value,
-      assignedSubjects: [],
+      academicAssignments: prev.academicAssignments.map((row) => ({
+        ...row,
+        isPrimary: row.localId === localId,
+      })),
     }));
   };
 
@@ -496,98 +782,66 @@ const CreateUser = () => {
       const needsAssignment = roles.some((item) =>
         rolesThatNeedAssignments.includes(item),
       );
+      const mustBeSingleAssignment = roles.includes("student");
+      const nextAssignments = !needsAssignment
+        ? [{ ...createAssignmentRow(), isPrimary: true }]
+        : mustBeSingleAssignment
+          ? [
+              {
+                ...(prev.academicAssignments[0] || createAssignmentRow()),
+                isPrimary: true,
+              },
+            ]
+          : prev.academicAssignments;
 
       return {
         ...prev,
         roles,
         addAssignment: needsAssignment ? prev.addAssignment : false,
-        isCoordinator: roles.includes("coordinator"),
         schoolId: roles.includes("superAdmin") ? "" : prev.schoolId,
         universityEmail: roles.includes("superAdmin")
           ? ""
           : prev.universityEmail,
         institutionId: roles.includes("superAdmin") ? "" : prev.institutionId,
-        programId: needsAssignment ? prev.programId : "",
-        specializationId: needsAssignment ? prev.specializationId : "",
-        semesterId: needsAssignment ? prev.semesterId : "",
-        assignedSubjects: needsAssignment ? prev.assignedSubjects : [],
+        academicAssignments: nextAssignments,
       };
     });
 
     if (error) setError("");
   };
 
-  const toggleSubject = (subjectId) => {
+  const toggleAssignmentSubject = (localId, subjectId) => {
     setFormData((prev) => ({
       ...prev,
-      assignedSubjects: prev.assignedSubjects.includes(subjectId)
-        ? prev.assignedSubjects.filter((id) => id !== subjectId)
-        : [...prev.assignedSubjects, subjectId],
+      academicAssignments: prev.academicAssignments.map((row) =>
+        row.localId === localId
+          ? {
+              ...row,
+              assignedSubjects: row.assignedSubjects.includes(subjectId)
+                ? row.assignedSubjects.filter((id) => id !== subjectId)
+                : [...row.assignedSubjects, subjectId],
+            }
+          : row,
+      ),
     }));
   };
 
-  const validateForm = () => {
-    if (!formData.firstName.trim()) return "First name is required.";
-    if (!formData.lastName.trim()) return "Last name is required.";
-    if (!formData.personalEmail.trim()) return "Personal email is required.";
-    if (!isValidEmail(formData.personalEmail)) {
-      return "Please enter a valid personal email address.";
-    }
-    if (!formData.confirmPersonalEmail.trim()) {
-      return "Confirm personal email before creating the user.";
-    }
-    if (!personalEmailVerified) {
-      return "Personal email confirmation must match a valid personal email.";
-    }
-    if (!formData.roles.length) return "Select at least one role.";
-    if (formData.roles.includes("superAdmin") && formData.roles.length > 1) {
-      return "Super Admin cannot be combined with other roles.";
-    }
-    if (selectedRoleNeedsSchool && !formData.schoolId)
-      return "School is required.";
-    if (selectedRoleNeedsSchool && !formData.institutionId.trim()) {
-      return "Institution ID is required.";
-    }
-    if (selectedRoleNeedsSchool && !formData.universityEmail.trim()) {
-      return "University email is required.";
-    }
-    if (
-      formData.universityEmail.trim() &&
-      !isValidEmail(formData.universityEmail)
-    ) {
-      return "Please enter a valid university email address.";
-    }
-    if (
-      selectedRoleNeedsSchool &&
-      normalizeEmail(formData.personalEmail) ===
-        normalizeEmail(formData.universityEmail)
-    ) {
-      return "Personal and university email must be different.";
-    }
-    if (selectedRoleNeedsAssignment && !formData.addAssignment) {
-      return "Academic assignment is required for the selected role.";
-    }
-    if (selectedRoleNeedsAssignment && !formData.programId) {
-      return "Program is required for academic assignment.";
-    }
-    if (selectedRoleNeedsAssignment && !formData.semesterId) {
-      return "Semester is required for academic assignment.";
-    }
-    if (
-      selectedRoleNeedsAssignment &&
-      selectedFacultyLikeRole &&
-      formData.assignedSubjects.length === 0
-    ) {
-      return "Faculty and coordinator users must be assigned to at least one subject.";
-    }
-
-    return "";
-  };
+  const validateForm = () =>
+    validateFormData(formData, { canCreatePrivilegedUsers });
 
   const buildPayload = () => {
     const roles = formData.roles.includes("coordinator")
       ? [...new Set([...formData.roles, "faculty"])]
       : formData.roles;
+
+    const hasAssignmentRequiringRole = roles.some((role) =>
+      rolesThatNeedAssignments.includes(role),
+    );
+    const hasAssignmentBlockedRole = roles.some((role) =>
+      assignmentBlockedRoles.includes(role),
+    );
+    const shouldIncludeAcademicAssignments =
+      hasAssignmentRequiringRole && !hasAssignmentBlockedRole;
 
     const payload = {
       firstName: formData.firstName.trim().replace(/\s+/g, " "),
@@ -606,22 +860,17 @@ const CreateUser = () => {
       };
     }
 
-    if (roles.some((role) => rolesThatNeedAssignments.includes(role))) {
-      payload.academicAssignments = [
-        {
-          programId: formData.programId,
-          specializationId: formData.specializationId || null,
-          semesterId: formData.semesterId,
-          assignedSubjects: roles.includes("student")
-            ? []
-            : formData.assignedSubjects,
-          isCoordinator:
-            roles.includes("coordinator") || formData.isCoordinator,
-          isPrimary: formData.isPrimary,
-          status: formData.assignmentStatus,
-          assignedBy: formData.assignedBy || undefined,
-        },
-      ];
+    if (shouldIncludeAcademicAssignments) {
+      payload.academicAssignments = formData.academicAssignments.map((row) => ({
+        programId: row.programId,
+        specializationId: row.specializationId || null,
+        semesterId: row.semesterId,
+        assignedSubjects: roles.includes("student") ? [] : row.assignedSubjects,
+        isCoordinator: Boolean(row.isCoordinator),
+        isPrimary: row.isPrimary,
+        status: row.status,
+        assignedBy: row.assignedBy || undefined,
+      }));
     }
 
     return payload;
@@ -645,6 +894,11 @@ const CreateUser = () => {
       const response = await createUser(buildPayload());
       const message =
         response.data?.message || "User created and verification email sent.";
+
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(DRAFT_KEY);
+      }
+
       navigate(backPath, {
         state: canCreatePrivilegedUsers ? { message } : undefined,
       });
@@ -656,7 +910,23 @@ const CreateUser = () => {
   };
 
   const handleSaveDraft = () => {
-    localStorage.setItem("stratex-create-user-draft", JSON.stringify(formData));
+    const validationMessage = validateForm();
+    if (validationMessage) {
+      setError(validationMessage);
+      setSuccess("");
+      return;
+    }
+
+    const draftPayload = {
+      ...formData,
+      savedAt: new Date().toISOString(),
+    };
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(DRAFT_KEY, JSON.stringify(draftPayload));
+    }
+
+    setError("");
     setSuccess("Draft saved locally");
   };
 
@@ -993,127 +1263,205 @@ const CreateUser = () => {
                 </label>
               </div>
 
-              <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                <SelectField
-                  id="programId"
-                  name="programId"
-                  required={selectedRoleNeedsAssignment}
-                  label="Program"
-                  value={formData.programId}
-                  onChange={handleProgramChange}
-                  disabled={!formData.addAssignment || !formData.schoolId}
-                  options={programs.map((program) => ({
-                    value: program._id,
-                    label: program.name,
-                  }))}
-                  placeholder="Select program"
-                />
-                <SelectField
-                  id="specializationId"
-                  name="specializationId"
-                  label="Specialization (Optional)"
-                  value={formData.specializationId}
-                  onChange={handleSpecializationChange}
-                  disabled={!formData.addAssignment || !formData.programId}
-                  options={specializations.map((specialization) => ({
-                    value: specialization._id,
-                    label: specialization.name,
-                  }))}
-                  placeholder="Select specialization"
-                />
-                <SelectField
-                  id="semesterId"
-                  name="semesterId"
-                  required={selectedRoleNeedsAssignment}
-                  label="Semester"
-                  value={formData.semesterId}
-                  onChange={handleSemesterChange}
-                  disabled={!formData.addAssignment || !formData.programId}
-                  options={semesterOptions.map((semester) => ({
-                    value: semester._id,
-                    label: `Semester ${semester.semesterNumber}`,
-                  }))}
-                  placeholder="Select semester"
-                />
+              <div className="mt-6 space-y-5">
+                {formData.academicAssignments.map((row, index) => {
+                  const rowSemesterOptions = getSemesterOptionsForRow(
+                    row.programId,
+                  );
+                  const rowFilteredSubjects = getFilteredSubjectsForRow(row);
+                  const rowSpecializations = getRowOptions(
+                    row.programId,
+                  ).specializations;
 
-                <div className="sm:col-span-2">
-                  <p className={labelClass}>
-                    Assigned Subjects (For Faculty / Coordinator)
-                  </p>
-                  <div className="min-h-11 rounded-lg border border-[#cfdced] bg-white px-3 py-2">
-                    {filteredSubjects.length ? (
-                      <div className="flex flex-wrap gap-2">
-                        {filteredSubjects.map((subject) => {
-                          const selected = formData.assignedSubjects.includes(
-                            subject._id,
-                          );
+                  return (
+                    <div
+                      key={row.localId}
+                      className="rounded-xl border border-[#dfe7f3] bg-[#f8fafd] p-4 sm:p-5"
+                    >
+                      {formData.academicAssignments.length > 1 && (
+                        <div className="mb-4 flex items-center justify-between">
+                          <span className="text-xs font-black uppercase tracking-wide text-[#53657f]">
+                            Assignment {index + 1}
+                            {row.isPrimary && (
+                              <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-black text-blue-700">
+                                Primary
+                              </span>
+                            )}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeAssignmentRow(row.localId)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled={!formData.addAssignment}
+                          >
+                            <Trash2 size={13} />
+                            Remove
+                          </button>
+                        </div>
+                      )}
 
-                          return (
-                            <button
-                              type="button"
-                              key={subject._id}
-                              onClick={() => toggleSubject(subject._id)}
-                              disabled={selectedOnlyStudent}
-                              className={`rounded-full border px-3 py-1.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                                selected
-                                  ? "border-blue-600 bg-blue-600 text-white"
-                                  : "border-[#d8e2f0] bg-white text-[#53657f] hover:border-blue-300"
-                              }`}
-                            >
-                              {subject.code ? `${subject.code} - ` : ""}
-                              {subject.name}
-                            </button>
-                          );
-                        })}
+                      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                        <SelectField
+                          id={`programId-${row.localId}`}
+                          required={selectedRoleNeedsAssignment}
+                          label="Program"
+                          value={row.programId}
+                          onChange={(value) =>
+                            handleRowProgramChange(row.localId, value)
+                          }
+                          disabled={
+                            !formData.addAssignment || !formData.schoolId
+                          }
+                          options={programs.map((program) => ({
+                            value: program._id,
+                            label: program.name,
+                          }))}
+                          placeholder="Select program"
+                        />
+                        <SelectField
+                          id={`specializationId-${row.localId}`}
+                          label="Specialization (Optional)"
+                          value={row.specializationId}
+                          onChange={(value) =>
+                            handleRowSpecializationChange(row.localId, value)
+                          }
+                          disabled={!formData.addAssignment || !row.programId}
+                          options={rowSpecializations.map((specialization) => ({
+                            value: specialization._id,
+                            label: specialization.name,
+                          }))}
+                          placeholder="Select specialization"
+                        />
+                        <SelectField
+                          id={`semesterId-${row.localId}`}
+                          required={selectedRoleNeedsAssignment}
+                          label="Semester"
+                          value={row.semesterId}
+                          onChange={(value) =>
+                            handleRowSemesterChange(row.localId, value)
+                          }
+                          disabled={!formData.addAssignment || !row.programId}
+                          options={rowSemesterOptions.map((semester) => ({
+                            value: semester._id,
+                            label: `Semester ${semester.semesterNumber}`,
+                          }))}
+                          placeholder="Select semester"
+                        />
+
+                        <div className="sm:col-span-2">
+                          <p className={labelClass}>
+                            Assigned Subjects (For Faculty / Coordinator)
+                          </p>
+                          <div className="min-h-11 rounded-lg border border-[#cfdced] bg-white px-3 py-2">
+                            {rowFilteredSubjects.length ? (
+                              <div className="flex flex-wrap gap-2">
+                                {rowFilteredSubjects.map((subject) => {
+                                  const selected =
+                                    row.assignedSubjects.includes(subject._id);
+
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={subject._id}
+                                      onClick={() =>
+                                        toggleAssignmentSubject(
+                                          row.localId,
+                                          subject._id,
+                                        )
+                                      }
+                                      disabled={selectedOnlyStudent}
+                                      className={`rounded-full border px-3 py-1.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                                        selected
+                                          ? "border-blue-600 bg-blue-600 text-white"
+                                          : "border-[#d8e2f0] bg-white text-[#53657f] hover:border-blue-300"
+                                      }`}
+                                    >
+                                      {subject.code ? `${subject.code} - ` : ""}
+                                      {subject.name}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="py-1 text-sm font-semibold text-[#7b8aa5]">
+                                Select program and semester to view subjects
+                              </p>
+                            )}
+                          </div>
+                          <p className="mt-2 text-xs font-semibold text-[#53657f]">
+                            Select one or more subjects
+                          </p>
+                        </div>
+
+                        <CheckField
+                          label="Is Coordinator?"
+                          checked={row.isCoordinator}
+                          onChange={(checked) =>
+                            updateAssignmentRow(row.localId, {
+                              isCoordinator: checked,
+                            })
+                          }
+                          disabled={!formData.roles.includes("coordinator")}
+                        />
+                        <label className="flex items-center gap-3 self-end pb-3 text-xs font-bold text-[#14264a]">
+                          <input
+                            type="radio"
+                            name="primaryAssignment"
+                            checked={row.isPrimary}
+                            onChange={() =>
+                              setPrimaryAssignmentRow(row.localId)
+                            }
+                            disabled={formData.academicAssignments.length === 1}
+                            className="h-4 w-4 accent-blue-600 disabled:opacity-50"
+                          />
+                          Primary Assignment
+                        </label>
+                        <SelectField
+                          id={`assignmentStatus-${row.localId}`}
+                          required={selectedRoleNeedsAssignment}
+                          label="Assignment Status"
+                          value={row.status}
+                          onChange={(value) =>
+                            updateAssignmentRow(row.localId, { status: value })
+                          }
+                          options={[
+                            { value: "active", label: "Active" },
+                            { value: "inactive", label: "Inactive" },
+                          ]}
+                        />
+                        <SelectField
+                          id={`assignedBy-${row.localId}`}
+                          className="sm:col-span-2"
+                          label="Assigned By (Optional)"
+                          value={row.assignedBy}
+                          onChange={(value) =>
+                            updateAssignmentRow(row.localId, {
+                              assignedBy: value,
+                            })
+                          }
+                          options={admins.map((admin) => ({
+                            value: admin._id,
+                            label:
+                              `${admin.firstName || ""} ${admin.lastName || ""}`.trim(),
+                          }))}
+                          placeholder="Select admin"
+                        />
                       </div>
-                    ) : (
-                      <p className="py-1 text-sm font-semibold text-[#7b8aa5]">
-                        Select program and semester to view subjects
-                      </p>
-                    )}
-                  </div>
-                  <p className="mt-2 text-xs font-semibold text-[#53657f]">
-                    Select one or more subjects
-                  </p>
-                </div>
+                    </div>
+                  );
+                })}
 
-                <CheckField
-                  label="Is Coordinator?"
-                  checked={formData.isCoordinator}
-                  onChange={(checked) => updateField("isCoordinator", checked)}
-                  disabled={!formData.roles.includes("coordinator")}
-                />
-                <CheckField
-                  label="Is Primary Assignment?"
-                  checked={formData.isPrimary}
-                  onChange={(checked) => updateField("isPrimary", checked)}
-                />
-                <SelectField
-                  id="assignmentStatus"
-                  name="assignmentStatus"
-                  required={selectedRoleNeedsAssignment}
-                  label="Assignment Status"
-                  value={formData.assignmentStatus}
-                  onChange={(value) => updateField("assignmentStatus", value)}
-                  options={[
-                    { value: "active", label: "Active" },
-                    { value: "inactive", label: "Inactive" },
-                  ]}
-                />
-                <SelectField
-                  id="assignedBy"
-                  name="assignedBy"
-                  className="sm:col-span-2"
-                  label="Assigned By (Optional)"
-                  value={formData.assignedBy}
-                  onChange={(value) => updateField("assignedBy", value)}
-                  options={admins.map((admin) => ({
-                    value: admin._id,
-                    label:
-                      `${admin.firstName || ""} ${admin.lastName || ""}`.trim(),
-                  }))}
-                  placeholder="Select admin"
-                />
+                {canAddMultipleAssignments && (
+                  <button
+                    type="button"
+                    onClick={addAssignmentRow}
+                    disabled={!formData.addAssignment}
+                    className="inline-flex items-center gap-2 rounded-lg border border-dashed border-blue-300 bg-blue-50 px-4 py-2.5 text-xs font-black text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Plus size={14} />
+                    Add Another Assignment
+                  </button>
+                )}
               </div>
 
               <div className="mt-7 flex flex-col-reverse gap-3 border-t border-[#e5edf7] pt-5 sm:flex-row sm:justify-end">
@@ -1198,27 +1546,59 @@ const CreateUser = () => {
 
             <SideCard
               icon={GraduationCap}
-              title="Selected Academic Assignment"
+              title="Selected Academic Assignment(s)"
               subtitle="The assignment details will appear here."
             >
-              <div className="mt-5 rounded-xl border border-dashed border-[#b8c9df] bg-white px-4 py-8 text-center">
-                {selectedProgram || selectedSemester ? (
-                  <div className="space-y-2 text-sm font-bold text-[#53657f]">
-                    <p className="text-[#14264a]">
-                      {selectedProgram?.name || "Program not selected"}
-                    </p>
-                    <p>{selectedSpecialization?.name || "No specialization"}</p>
-                    <p>
-                      {selectedSemester
-                        ? `Semester ${selectedSemester.semesterNumber}`
-                        : "Semester not selected"}
-                    </p>
-                    <p>
-                      {formData.assignedSubjects.length} subject(s) selected
-                    </p>
+              <div className="mt-5 rounded-xl border border-dashed border-[#b8c9df] bg-white px-4 py-4">
+                {formData.academicAssignments.some(
+                  (row) => row.programId || row.semesterId,
+                ) ? (
+                  <div className="space-y-4">
+                    {formData.academicAssignments.map((row, index) => {
+                      const rowProgram = programs.find(
+                        (program) => program._id === row.programId,
+                      );
+                      const rowSpecialization = getRowOptions(
+                        row.programId,
+                      ).specializations.find(
+                        (specialization) =>
+                          specialization._id === row.specializationId,
+                      );
+                      const rowSemester = getSemesterOptionsForRow(
+                        row.programId,
+                      ).find((semester) => semester._id === row.semesterId);
+
+                      return (
+                        <div
+                          key={row.localId}
+                          className="space-y-1 text-sm font-bold text-[#53657f]"
+                        >
+                          {formData.academicAssignments.length > 1 && (
+                            <p className="text-[10px] font-black uppercase tracking-wide text-blue-600">
+                              Assignment {index + 1}
+                              {row.isPrimary ? " · Primary" : ""}
+                            </p>
+                          )}
+                          <p className="text-[#14264a]">
+                            {rowProgram?.name || "Program not selected"}
+                          </p>
+                          <p>
+                            {rowSpecialization?.name || "No specialization"}
+                          </p>
+                          <p>
+                            {rowSemester
+                              ? `Semester ${rowSemester.semesterNumber}`
+                              : "Semester not selected"}
+                          </p>
+                          <p>
+                            {row.assignedSubjects.length} subject(s) selected
+                          </p>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
-                  <>
+                  <div className="py-4 text-center">
                     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-500">
                       <BookOpen size={24} />
                     </div>
@@ -1228,7 +1608,7 @@ const CreateUser = () => {
                     <p className="mx-auto mt-2 max-w-48 text-xs font-semibold leading-5 text-[#53657f]">
                       Select program, semester and subjects to see summary.
                     </p>
-                  </>
+                  </div>
                 )}
               </div>
             </SideCard>
