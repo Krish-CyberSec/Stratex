@@ -111,9 +111,30 @@ const Notifications = () => {
     };
 
     window.addEventListener('socket:notification', handleRealtime);
+    const handleRealtimeRemoval = (e) => {
+      try {
+        const payload = e.detail || e;
+        const removedNotificationId = payload.notificationId;
+        if (!removedNotificationId) return;
+
+        setNotifications((current) => {
+          const removedItem = current.find((item) => getNotificationId(item) === removedNotificationId);
+          if (removedItem && removedItem.isRead === false) {
+            setUnreadCount((count) => Math.max(0, count - 1));
+          }
+
+          return current.filter((item) => getNotificationId(item) !== removedNotificationId);
+        });
+      } catch (err) {
+        console.error('realtime notification removal handler', err);
+      }
+    };
+
+    window.addEventListener('socket:notification-removed', handleRealtimeRemoval);
 
     return () => {
       window.removeEventListener('socket:notification', handleRealtime);
+      window.removeEventListener('socket:notification-removed', handleRealtimeRemoval);
     };
 
   }, [loadNotifications]);

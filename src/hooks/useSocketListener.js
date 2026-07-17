@@ -18,10 +18,19 @@ export const useSocketListener = () => {
       }
     };
 
+    const notificationRemovedHandler = (payload) => {
+      try {
+        window.dispatchEvent(new CustomEvent("socket:notification-removed", { detail: payload }));
+      } catch (err) {
+        console.error("socket:notification-removed dispatch error", err);
+      }
+    };
+
     const attachSocket = () => {
       const socket = getSocket();
       if (socket && !attachedRef.current) {
         socket.on("notification:new", notificationHandler);
+        socket.on("notification:removed", notificationRemovedHandler);
         attachedRef.current = true;
       }
     };
@@ -47,6 +56,7 @@ export const useSocketListener = () => {
       const socket = getSocket();
       if (socket && attachedRef.current) {
         socket.off("notification:new", notificationHandler);
+        socket.off("notification:removed", notificationRemovedHandler);
       }
     };
   }, []);
