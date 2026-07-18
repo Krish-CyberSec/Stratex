@@ -6,7 +6,6 @@ import {
   Clock,
   Download,
   FileText,
-  Image as ImageIcon,
   Info,
   MapPin,
   RefreshCw,
@@ -123,14 +122,7 @@ const sampleEvents = {
   },
 };
 
-const galleryImages = [
-  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=700&q=80",
-  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=700&q=80",
-  "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&w=700&q=80",
-  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=700&q=80",
-];
-
-const tabs = ["About", "Details", "Gallery", "Venue", "Organized By"];
+const tabs = ["About", "Details", "Venue", "Organized By"];
 
 const getPayload = (response) => response?.data?.data || response?.data?.event || response?.data;
 
@@ -327,14 +319,6 @@ const EventMainContent = ({ event }) => {
             </div>
           ) : null}
 
-          {activeTab === "Gallery" ? (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {galleryImages.map((image) => (
-                <img key={image} src={image} alt="" className="h-32 w-full rounded-lg object-cover" />
-              ))}
-            </div>
-          ) : null}
-
           {activeTab === "Venue" ? (
             <div className="rounded-xl border border-[var(--border-light)] bg-[var(--surface-soft)] p-4">
               <p className="text-xs font-black uppercase text-[var(--stratex-blue)]">Venue</p>
@@ -377,23 +361,6 @@ const EventMainContent = ({ event }) => {
   );
 };
 
-const GalleryStrip = () => (
-  <DetailCard className="p-4 sm:p-5">
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <h2 className="text-base font-black text-[var(--university-ink)]">Gallery</h2>
-      <button type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-100 px-4 text-xs font-black text-[var(--stratex-blue)] hover:bg-blue-50">
-        <ImageIcon size={15} />
-        View All Photos
-      </button>
-    </div>
-    <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-      {galleryImages.map((image) => (
-        <img key={image} src={image} alt="" className="h-24 w-full rounded-lg object-cover sm:h-28" />
-      ))}
-    </div>
-  </DetailCard>
-);
-
 const EventSidebar = ({ event }) => (
   <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
     <DetailCard className="p-4">
@@ -406,15 +373,16 @@ const EventSidebar = ({ event }) => (
       <div className="mt-3 divide-y divide-[var(--border-light)]">
         <InfoLine label="Event Type" value="University Event" />
         <InfoLine label="Audience" value="All Students" />
-        <InfoLine label="Registration" value={event.status === "scheduled" ? "Open" : "Closed"} />
+        <InfoLine label="Registration" value="Disabled" />
         <InfoLine label="Published On" value={formatDateTime(event.createdAt)} />
         <InfoLine label="Last Updated" value={formatDateTime(event.updatedAt)} />
       </div>
       <button
         type="button"
-        className="mt-4 h-10 w-full rounded-lg bg-[var(--stratex-blue)] px-4 text-xs font-black text-white shadow-sm transition hover:bg-[var(--stratex-blue-dark)]"
+        disabled
+        className="mt-4 h-10 w-full cursor-not-allowed rounded-lg bg-slate-200 px-4 text-xs font-black text-slate-500"
       >
-        Register for Event
+        Registration Disabled
       </button>
     </DetailCard>
 
@@ -539,7 +507,6 @@ const EventView = () => {
           <div className="min-w-0 space-y-5">
             <EventHero event={event} />
             <EventMainContent event={event} />
-            <GalleryStrip />
             <div className="flex gap-2 rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-xs font-semibold text-[var(--stratex-blue)]">
               <Info size={15} className="mt-0.5 shrink-0" />
               <span>Please arrive 15 minutes before the event starts. Carry your university ID card for verification.</span>

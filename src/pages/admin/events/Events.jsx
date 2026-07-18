@@ -13,6 +13,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Pagination from "../../../components/common/Pagination";
+import { useAuth } from "../../../context/AuthContext";
 import { createEvent, deleteEvent, getEvents, updateEvent } from "../../../services/eventService";
 import NoticeRichTextEditor from "../notices/components/create/NoticeRichTextEditor";
 import { getNoticeText } from "../notices/noticeContentUtils";
@@ -21,6 +22,10 @@ const getList = (response) => response?.data?.data || [];
 const getPagination = (response) => response?.data?.pagination || {};
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.response?.data?.errors?.[0] || error?.message || fallback;
+const getId = (value) => (typeof value === "object" ? value?._id || value?.id || "" : value || "");
+const getUserRoles = (user = {}) => [
+  ...new Set([...(Array.isArray(user.roles) ? user.roles : []), user.primaryRole, user.role].filter(Boolean)),
+];
 
 const sampleEvents = [
   {
@@ -313,7 +318,7 @@ const EventToolbar = ({
   </section>
 );
 
-const EventCard = ({ event, index, onDelete, onEdit, onView }) => {
+const EventCard = ({ canManage, event, index, onDelete, onEdit, onView }) => {
   const realStatus = event.status || "scheduled";
   const displayStatus = event.isSample ? realStatus : realStatus;
 
@@ -362,7 +367,7 @@ const EventCard = ({ event, index, onDelete, onEdit, onView }) => {
             <ArrowRight size={13} />
           </button>
           <div className="flex items-center gap-2">
-            {!event.isSample ? (
+            {!event.isSample && canManage ? (
               <>
                 <button
                   type="button"
@@ -391,6 +396,7 @@ const EventCard = ({ event, index, onDelete, onEdit, onView }) => {
 
 const Events = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [events, setEvents] = useState([]);
   const [pagination, setPagination] = useState({});
   const [search, setSearch] = useState("");
@@ -405,6 +411,11 @@ const Events = () => {
   const [modalError, setModalError] = useState("");
   const [editingEvent, setEditingEvent] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
+  const roles = getUserRoles(user);
+  const canCreate = roles.some((role) => ["superAdmin", "schoolAdmin"].includes(role));
+  const isSuperAdmin = roles.includes("superAdmin");
+  const canManageEvent = (event) =>
+    Boolean(event?.canManage) || isSuperAdmin || getId(event?.createdBy) === getId(user);
 
   const loadEvents = useCallback(async () => {
     setLoading(true);
@@ -438,6 +449,7 @@ const Events = () => {
   }, [loadEvents]);
 
   const openCreate = () => {
+    if (!canCreate) return;
     navigate("/dashboard/events/create");
   };
 
@@ -507,14 +519,16 @@ const Events = () => {
               Browse and discover upcoming events, workshops, and activities.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--stratex-blue)] px-4 text-sm font-black text-white shadow-sm transition hover:bg-[var(--stratex-blue-dark)]"
-          >
-            <Plus size={17} />
-            Create Event
-          </button>
+          {canCreate ? (
+            <button
+              type="button"
+              onClick={openCreate}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--stratex-blue)] px-4 text-sm font-black text-white shadow-sm transition hover:bg-[var(--stratex-blue-dark)]"
+            >
+              <Plus size={17} />
+              Create Event
+            </button>
+          ) : null}
         </header>
 
         <EventToolbar
@@ -558,6 +572,7 @@ const Events = () => {
                 key={event._id || index}
                 event={event}
                 index={index}
+                canManage={canManageEvent(event)}
                 onDelete={handleDelete}
                 onEdit={openEdit}
                 onView={(item) => navigate(`/dashboard/events/${item._id}`)}

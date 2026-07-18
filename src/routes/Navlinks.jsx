@@ -245,7 +245,14 @@ const Navlinks = () => {
         />
         <Route path="notices/:id" element={<NoticeView />} />
         <Route path="notices" element={<Notices />} />
-        <Route path="events/create" element={<CreateEvent />} />
+        <Route
+          path="events/create"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
+              <CreateEvent />
+            </ProtectedRoute>
+          }
+        />
         <Route path="events/:id" element={<EventView />} />
         <Route path="events" element={<Events />} />
         <Route path="profile" element={<Profile />} />

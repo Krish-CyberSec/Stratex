@@ -101,16 +101,18 @@ const Navbar = () => {
     const handleRealtimeRemoval = (event) => {
       try {
         const payload = event.detail || event;
-        const removedNotificationId = payload.notificationId;
-        if (!removedNotificationId) return;
+        const removedNotificationIds = payload.notificationIds || [payload.notificationId].filter(Boolean);
+        if (!removedNotificationIds.length) return;
+        const removedSet = new Set(removedNotificationIds.map(String));
 
         setNotifications((current) => {
-          const removedItem = current.find((item) => getNotificationId(item) === removedNotificationId);
-          if (removedItem && removedItem.isRead === false) {
-            setUnreadCount((count) => Math.max(0, count - 1));
-          }
+          const unreadRemoved = current.filter(
+            (item) => removedSet.has(String(getNotificationId(item))) && item.isRead === false,
+          ).length;
 
-          return current.filter((item) => getNotificationId(item) !== removedNotificationId);
+          if (unreadRemoved) setUnreadCount((count) => Math.max(0, count - unreadRemoved));
+
+          return current.filter((item) => !removedSet.has(String(getNotificationId(item))));
         });
       } catch (err) {
         console.error("Navbar realtime notification removal handler", err);
