@@ -24,6 +24,9 @@ import CreateSubject from "../pages/admin/subjects/CreateSubject";
 import BulkSubjects from "../pages/admin/subjects/BulkSubjects";
 import SubjectView from "../pages/admin/subjects/SubjectView";
 import Specializations from "../pages/admin/specializations/Specializations";
+import CreateSpecialization from "../pages/admin/specializations/CreateSpecialization";
+import EditSpecialization from "../pages/admin/specializations/EditSpecialization";
+import SpecializationView from "../pages/admin/specializations/SpecializationView";
 import Notification from "../components/dashboard/Notifications";
 import NotificationDetail from "../components/dashboard/NotificationDetail";
 import Notices from "../pages/admin/notices/Notices";
@@ -31,6 +34,7 @@ import CreateNotice from "../pages/admin/notices/CreateNotice";
 import EditNotice from "../pages/admin/notices/EditNotice";
 import NoticeView from "../pages/admin/notices/NoticeView";
 import Events from "../pages/admin/events/Events";
+import CreateEvent from "../pages/admin/events/CreateEvent";
 import EventView from "../pages/admin/events/EventView";
 import Profile from "../pages/profile/Profile";
 
@@ -188,6 +192,30 @@ const Navlinks = () => {
         />
 
         <Route
+          path="specializations/create"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
+              <CreateSpecialization />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="specializations/:id/edit"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
+              <EditSpecialization />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="specializations/:id"
+          element={
+            <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
+              <SpecializationView />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="specializations"
           element={
             <ProtectedRoute allowedRoles={["superAdmin", "schoolAdmin"]}>
@@ -217,6 +245,7 @@ const Navlinks = () => {
         />
         <Route path="notices/:id" element={<NoticeView />} />
         <Route path="notices" element={<Notices />} />
+        <Route path="events/create" element={<CreateEvent />} />
         <Route path="events/:id" element={<EventView />} />
         <Route path="events" element={<Events />} />
         <Route path="profile" element={<Profile />} />

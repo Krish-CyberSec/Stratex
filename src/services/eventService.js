@@ -3,6 +3,9 @@ import axiosInstance from "../utils/axiosInstance";
 export const getEvents = (params = {}) =>
   axiosInstance.get("/events", { params });
 
+export const getLoginCarouselEvents = () =>
+  axiosInstance.get("/events/login-carousel");
+
 export const getEventById = (id) =>
   axiosInstance.get(`/events/${id}`);
 
