@@ -95,22 +95,6 @@ const BulkSubjects = () => {
             "specializationId",
             "status",
           ]}
-          sampleRows={[
-            [
-              "CS101",
-              "Introduction to Computer Science",
-              "Foundational course for computing.",
-              "",
-              "school-of-engineering",
-              "",
-              "CS101",
-              "",
-              "1",
-              "4",
-              "",
-              "active",
-            ],
-          ]}
           helpText="Provide either schoolId or schoolSlug, and either programId or programCode. Use semesterId or semesterNumber. Leave status blank to default to active."
           onUpload={uploadSubjectsCsv}
           validationSchema={validationSchema}

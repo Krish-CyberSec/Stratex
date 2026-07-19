@@ -69,19 +69,6 @@ const BulkSchools = () => {
             "mission",
             "status",
           ]}
-          sampleRows={[
-            [
-              "School of Engineering",
-              "school-of-engineering",
-              "Engineering school with multiple departments.",
-              "info@engineering.example.com",
-              "https://engineering.example.com",
-              "ENG",
-              "Build a better future.",
-              "Prepare leaders in technology.",
-              "active",
-            ],
-          ]}
           helpText="Slug should only contain lowercase letters, numbers, and hyphens. Leave status blank to default to active. If website is left empty it will be auto-generated using the base URL and slug (pattern: https://baseurl/slug). Configure base URL using the SCHOOL_BASE_URL environment variable."
           onUpload={uploadSchoolsCsv}
           validationSchema={validationSchema}
