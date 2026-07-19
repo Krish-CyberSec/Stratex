@@ -64,107 +64,6 @@ const formatDate = (value) => {
 
 const getEventImage = (event) => event.banner || event.poster || event.image || "";
 
-const EventFormModal = ({ error, event, loading, onClose, onSave }) => {
-  const [form, setForm] = useState(getInitialForm(event));
-
-  useEffect(() => {
-    setForm(getInitialForm(event));
-  }, [event]);
-
-  const updateField = (field, value) => {
-    setForm((current) => ({ ...current, [field]: value }));
-  };
-
-  const canSubmit = form.title.trim().length >= 2 && getNoticeText(form.description).trim().length >= 2 && form.startDate && !loading;
-
-  const handleSubmit = (submitEvent) => {
-    submitEvent.preventDefault();
-    if (!canSubmit) return;
-
-    onSave({
-      title: form.title.trim(),
-      description: form.description.trim(),
-      location: form.location.trim(),
-      startDate: new Date(form.startDate).toISOString(),
-      endDate: form.endDate ? new Date(form.endDate).toISOString() : undefined,
-      status: form.status,
-    });
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-3 sm:p-4">
-      <div className="max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-xl border border-[var(--border-light)] bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-4">
-          <div>
-            <h2 className="text-lg font-black text-[var(--university-ink)]">{event ? "Edit Event" : "Create Event"}</h2>
-            <p className="mt-1 text-xs font-semibold text-[var(--university-muted)]">Manage event title, schedule, location, and status.</p>
-          </div>
-          <button type="button" onClick={onClose} disabled={loading} className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-light)] text-[var(--university-muted)]">
-            <X size={16} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="max-h-[calc(92vh-74px)] space-y-4 overflow-y-auto p-5">
-          {error ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-[var(--error)]">{error}</div>
-          ) : null}
-
-          <label className="block">
-            <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">Title</span>
-            <input value={form.title} onChange={(e) => updateField("title", e.target.value)} className="h-11 w-full rounded-lg border border-[var(--border)] px-3 text-sm font-semibold outline-none focus:border-[var(--stratex-blue)]" />
-          </label>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="block">
-              <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">Start Date</span>
-              <input type="datetime-local" value={form.startDate} onChange={(e) => updateField("startDate", e.target.value)} className="h-11 w-full rounded-lg border border-[var(--border)] px-3 text-sm font-semibold outline-none focus:border-[var(--stratex-blue)]" />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">End Date</span>
-              <input type="datetime-local" value={form.endDate} onChange={(e) => updateField("endDate", e.target.value)} className="h-11 w-full rounded-lg border border-[var(--border)] px-3 text-sm font-semibold outline-none focus:border-[var(--stratex-blue)]" />
-            </label>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="block">
-              <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">Location</span>
-              <input value={form.location} onChange={(e) => updateField("location", e.target.value)} className="h-11 w-full rounded-lg border border-[var(--border)] px-3 text-sm font-semibold outline-none focus:border-[var(--stratex-blue)]" />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">Status</span>
-              <select value={form.status} onChange={(e) => updateField("status", e.target.value)} className="h-11 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-semibold outline-none focus:border-[var(--stratex-blue)]">
-                <option value="scheduled">Scheduled</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </label>
-          </div>
-
-          <div>
-            <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">Description</span>
-            <NoticeRichTextEditor
-              ariaLabel="Event description"
-              maxLength={1000}
-              onChange={(value) => updateField("description", value)}
-              placeholder="Write event description..."
-              resetKey={event?._id || "new-event"}
-              value={form.description}
-            />
-          </div>
-
-          <div className="flex flex-col-reverse gap-3 border-t border-[var(--border-light)] pt-4 sm:flex-row sm:justify-end">
-            <button type="button" onClick={onClose} disabled={loading} className="h-10 rounded-lg border border-[var(--border-light)] bg-white px-4 text-sm font-bold text-[var(--university-ink)]">Cancel</button>
-            <button type="submit" disabled={!canSubmit} className="h-10 rounded-lg bg-[var(--stratex-blue)] px-4 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-60">
-              {loading ? "Saving..." : "Save Event"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
 const EventToolbar = ({
   date,
   onClear,
@@ -369,29 +268,7 @@ const Events = () => {
   };
 
   const openEdit = (event) => {
-    setModalError("");
-    setEditingEvent(event);
-    setFormOpen(true);
-  };
-
-  const handleSave = async (payload) => {
-    setModalLoading(true);
-    setModalError("");
-
-    try {
-      if (editingEvent) {
-        await updateEvent(editingEvent._id, payload);
-      } else {
-        await createEvent(payload);
-      }
-      setFormOpen(false);
-      setEditingEvent(null);
-      await loadEvents();
-    } catch (err) {
-      setModalError(getErrorMessage(err, "Unable to save event"));
-    } finally {
-      setModalLoading(false);
-    }
+    navigate(`/dashboard/events/${event._id}`, { state: { edit: true } });
   };
 
   const handleDelete = async (event) => {

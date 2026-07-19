@@ -7,7 +7,9 @@ export const getUserById = (id) =>
   axiosInstance.get(`/users/${id}`);
 
 export const createUser = (data) =>
-  axiosInstance.post("/users", data);
+  axiosInstance.post("/users", data, {
+    headers: data instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined,
+  });
 
 export const updateUser = (id, data) =>
   axiosInstance.put(`/users/${id}`, data, {

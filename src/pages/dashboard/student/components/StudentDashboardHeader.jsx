@@ -16,7 +16,7 @@ const StudentDashboardHeader = ({ onRefresh, refreshing, student }) => (
           Welcome back, {getName(student).split(" ")[0]}
         </h1>
         <p className="mt-2 text-sm font-semibold text-[#64748b]">
-          Your academic workspace is synced with your assigned program and semester.
+          Your academic workspace is synced with your assigned course and semester.
         </p>
       </div>
 

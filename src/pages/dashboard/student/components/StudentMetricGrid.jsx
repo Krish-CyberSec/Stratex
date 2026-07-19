@@ -4,7 +4,7 @@ const metrics = [
   {
     key: "program",
     icon: GraduationCap,
-    label: "My Program",
+    label: "My Course",
     tone: "bg-[#eef2ff] text-[#4f46e5]",
   },
   {
@@ -29,9 +29,13 @@ const metrics = [
 
 const getMetricContent = (metric, student, data) => {
   if (metric.key === "program") {
+    const programName = student?.program?.name || student?.program?.code || "Not assigned";
+    const specializationName = student?.specialization?.name;
+    const courseName = specializationName ? `${programName} - ${specializationName}` : `${programName} - Core`;
+
     return {
-      value: student?.program?.code || student?.program?.degreeType || "Not assigned",
-      helper: student?.program?.name || "Program assignment pending",
+      value: student?.program ? student?.program?.code || student?.program?.degreeType || "Course" : "Not assigned",
+      helper: student?.program ? courseName : "Course assignment pending",
     };
   }
 

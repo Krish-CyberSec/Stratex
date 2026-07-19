@@ -24,6 +24,8 @@ import NoticeRichTextEditor from "../notices/components/create/NoticeRichTextEdi
 import { getNoticeText, hasNoticeHtml, sanitizeNoticeHtml } from "../notices/noticeContentUtils";
 
 const tabs = ["About", "Details", "Venue", "Organized By"];
+const defaultBanner =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='360' viewBox='0 0 900 360'%3E%3Crect width='900' height='360' fill='%23f1f5f9'/%3E%3Cpath d='M0 250 C160 150 270 300 430 200 S720 110 900 210 V360 H0 Z' fill='%23dbeafe'/%3E%3Ccircle cx='700' cy='110' r='54' fill='%23bfdbfe'/%3E%3C/svg%3E";
 
 const getPayload = (response) => response?.data?.data || response?.data?.event || response?.data;
 

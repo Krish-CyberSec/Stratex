@@ -23,6 +23,13 @@ const getPrimaryAssignment = (user) =>
   user?.academicAssignments?.find((assignment) => assignment.status !== "inactive") ||
   user?.academicAssignments?.[0];
 
+const getCourseName = (program, specialization) => {
+  const programName = program?.name || program?.code || "Course not assigned";
+  const specializationName =
+    typeof specialization === "object" ? specialization?.name : specialization ? "Specialization" : "";
+  return specializationName ? `${programName} - ${specializationName}` : `${programName} - Core`;
+};
+
 const buildSemesters = (program, subjects, programs) => {
   const programDuration = Number(program?.duration || 0);
   if (programDuration > 0) {
@@ -70,10 +77,12 @@ const Subjects = () => {
     () => programs.find((program) => getId(program) === selectedProgramId),
     [programs, selectedProgramId],
   );
-  const assignedProgramName =
-    primaryAssignment?.programId?.name ||
-    selectedProgram?.name ||
-    (assignedProgramId ? "The student assigned program" : "Program not assigned");
+  const assignedSpecialization =
+    primaryAssignment?.specializationId ||
+    subjects.find((subject) => getId(subject.specializationId) === assignedSpecializationId)?.specializationId;
+  const assignedCourseName = assignedProgramId
+    ? getCourseName(primaryAssignment?.programId || selectedProgram, assignedSpecialization)
+    : "Course not assigned";
 
   const loadPrograms = useCallback(async () => {
     try {
@@ -223,7 +232,7 @@ const Subjects = () => {
                 <h1 className="text-2xl font-bold leading-tight text-[var(--text-primary)] sm:text-3xl">My Subjects</h1>
                 <p className="mt-1 max-w-2xl text-sm font-medium text-[var(--text-secondary)]">
                   {isStudent
-                    ? "View current and past semester subjects from the student assigned program."
+                    ? "View current and past semester subjects from your assigned course."
                     : "View subjects you are enrolled in or manage under the selected program."}
                 </p>
               </div>
@@ -232,10 +241,10 @@ const Subjects = () => {
 
           {isStudent ? (
             <div className="w-full min-w-0 rounded-xl border border-[var(--border-light)] bg-white p-4 shadow-sm lg:max-w-[430px]">
-              <p className="text-xs font-black uppercase text-[var(--stratex-blue)]">The Student Assigned Program</p>
-              <p className="mt-2 truncate text-sm font-black text-[var(--university-ink)]">{assignedProgramName}</p>
+              <p className="text-xs font-black uppercase text-[var(--stratex-blue)]">Assigned Course</p>
+              <p className="mt-2 truncate text-sm font-black text-[var(--university-ink)]">{assignedCourseName}</p>
               <p className="mt-1 text-[11px] font-bold text-[var(--university-muted)]">
-                Program scope is fetched automatically from your academic assignment.
+                Course scope is fetched automatically from your academic assignment.
               </p>
             </div>
           ) : (
@@ -296,7 +305,7 @@ const Subjects = () => {
                 </div>
                 <p className="mt-1 text-xs font-medium text-[var(--university-muted)]">
                   {isStudent
-                    ? "These subjects are fetched from the student assigned program, including current and past semesters."
+                    ? "These subjects are fetched only from your assigned course, including current and past semesters."
                     : selectedProgramId
                       ? "These are the subjects available under the selected program."
                     : `Showing Semester ${activeSemester} subjects across all programs.`}
@@ -365,10 +374,10 @@ const Subjects = () => {
           </div>
           <div className="rounded-xl border border-[var(--border-light)] bg-white p-4 shadow-sm">
             <p className="text-xs font-bold text-[var(--university-muted)]">
-              {isStudent ? "The Student Assigned Program" : "Selected Program"}
+              {isStudent ? "Assigned Course" : "Selected Program"}
             </p>
             <p className="mt-1 truncate text-sm font-black text-[var(--university-ink)]">
-              {isStudent ? assignedProgramName : selectedProgram?.name || "All Programs"}
+              {isStudent ? assignedCourseName : selectedProgram?.name || "All Programs"}
             </p>
           </div>
         </div>

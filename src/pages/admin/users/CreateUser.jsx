@@ -390,6 +390,7 @@ const CreateUser = () => {
     {},
   );
   const [admins, setAdmins] = useState([]);
+  const [photoFile, setPhotoFile] = useState(null);
   const [photoName, setPhotoName] = useState("");
   const [photoPreview, setPhotoPreview] = useState("");
   const [formData, setFormData] = useState(() =>
@@ -902,6 +903,19 @@ const CreateUser = () => {
     return payload;
   };
 
+  const buildSubmitPayload = () => {
+    const payload = buildPayload();
+
+    if (!photoFile) {
+      return payload;
+    }
+
+    const formPayload = new FormData();
+    formPayload.append("payload", JSON.stringify(payload));
+    formPayload.append("profile", photoFile);
+    return formPayload;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -917,7 +931,7 @@ const CreateUser = () => {
     setSuccess("");
 
     try {
-      const response = await createUser(buildPayload());
+      const response = await createUser(buildSubmitPayload());
       const message =
         response.data?.message || "User created and setup email sent.";
 
@@ -1025,6 +1039,7 @@ const CreateUser = () => {
 
                         if (!file) return;
 
+                        setPhotoFile(file);
                         setPhotoName(file.name);
                         setPhotoPreview(URL.createObjectURL(file));
                       }}
