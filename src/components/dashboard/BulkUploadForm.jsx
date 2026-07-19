@@ -72,7 +72,7 @@ const BulkUploadForm = ({
   subtitle,
   templateFileName,
   templateHeaders,
-  sampleRows = [],
+  templateRows = [],
   onUpload,
   helpText,
   validationSchema = null, // optional schema for preflight validation
@@ -124,7 +124,7 @@ const BulkUploadForm = ({
   };
 
   const downloadTemplate = () => {
-    const rows = [templateHeaders, ...sampleRows];
+    const rows = [templateHeaders, ...templateRows];
     const contents = rows
       .map((row) =>
         row

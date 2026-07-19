@@ -73,18 +73,6 @@ const BulkPrograms = () => {
             "degreeType",
             "status",
           ]}
-          sampleRows={[
-            [
-              "Computer Science",
-              "CS101",
-              "",
-              "school-of-engineering",
-              "Core program for computer science students.",
-              "4",
-              "UG",
-              "active",
-            ],
-          ]}
           helpText="You may provide either schoolId or schoolSlug. The supported degree types are UG, PG, Diploma, and PhD. Leave status blank for active."
           onUpload={uploadProgramsCsv}
           validationSchema={validationSchema}

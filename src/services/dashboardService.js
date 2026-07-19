@@ -1,5 +1,8 @@
 import axiosInstance from "../utils/axiosInstance";
 
+export const getStudentDashboard = () =>
+  axiosInstance.get("/dashboard/student");
+
 export const getDashboardStats = () =>
   axiosInstance.get("/dashboard/stats");
 

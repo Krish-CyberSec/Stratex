@@ -70,6 +70,10 @@ const Subjects = () => {
     () => programs.find((program) => getId(program) === selectedProgramId),
     [programs, selectedProgramId],
   );
+  const assignedProgramName =
+    primaryAssignment?.programId?.name ||
+    selectedProgram?.name ||
+    (assignedProgramId ? "The student assigned program" : "Program not assigned");
 
   const loadPrograms = useCallback(async () => {
     try {
@@ -106,14 +110,19 @@ const Subjects = () => {
         limit: 500,
         sortBy: "code",
         order: "asc",
-        ...(selectedProgramId ? { programId: selectedProgramId } : {}),
-        ...(isSchoolAdmin && ownSchoolId ? { schoolId: ownSchoolId } : {}),
-        ...(isStudent && assignedSpecializationId ? { specializationId: assignedSpecializationId } : {}),
+        ...(!isStudent && selectedProgramId ? { programId: selectedProgramId } : {}),
+        ...(!isStudent && isSchoolAdmin && ownSchoolId ? { schoolId: ownSchoolId } : {}),
+        ...(!isStudent && assignedSpecializationId ? { specializationId: assignedSpecializationId } : {}),
         ...(isFaculty && userId ? { facultyId: userId } : {}),
       };
 
       const response = await getSubjects(params);
-      setSubjects(getList(response));
+      const nextSubjects = getList(response);
+      setSubjects(nextSubjects);
+      if (isStudent && nextSubjects.length) {
+        const latestSemester = Math.max(...nextSubjects.map(getSemesterNumber).filter(Boolean));
+        if (latestSemester) setActiveSemester(latestSemester);
+      }
     } catch (err) {
       setError(getErrorMessage(err, "Unable to load subjects"));
       setSubjects([]);
@@ -213,21 +222,33 @@ const Subjects = () => {
               <div className="min-w-0">
                 <h1 className="text-2xl font-bold leading-tight text-[var(--text-primary)] sm:text-3xl">My Subjects</h1>
                 <p className="mt-1 max-w-2xl text-sm font-medium text-[var(--text-secondary)]">
-                  View subjects you are enrolled in or manage under the selected program.
+                  {isStudent
+                    ? "View current and past semester subjects from the student assigned program."
+                    : "View subjects you are enrolled in or manage under the selected program."}
                 </p>
               </div>
             </div>
           </div>
 
-          <SubjectProgramSelector
-            programs={programs}
-            selectedProgramId={selectedProgramId}
-            locked={Boolean(assignedProgramId)}
-            onChange={(value) => {
-              setSelectedProgramId(value);
-              setActiveSemester(1);
-            }}
-          />
+          {isStudent ? (
+            <div className="w-full min-w-0 rounded-xl border border-[var(--border-light)] bg-white p-4 shadow-sm lg:max-w-[430px]">
+              <p className="text-xs font-black uppercase text-[var(--stratex-blue)]">The Student Assigned Program</p>
+              <p className="mt-2 truncate text-sm font-black text-[var(--university-ink)]">{assignedProgramName}</p>
+              <p className="mt-1 text-[11px] font-bold text-[var(--university-muted)]">
+                Program scope is fetched automatically from your academic assignment.
+              </p>
+            </div>
+          ) : (
+            <SubjectProgramSelector
+              programs={programs}
+              selectedProgramId={selectedProgramId}
+              locked={Boolean(assignedProgramId)}
+              onChange={(value) => {
+                setSelectedProgramId(value);
+                setActiveSemester(1);
+              }}
+            />
+          )}
         </header>
 
         <section className="min-w-0 rounded-xl border border-[var(--border-light)] bg-white p-3 shadow-sm sm:p-4">
@@ -274,8 +295,10 @@ const Subjects = () => {
                   </span>
                 </div>
                 <p className="mt-1 text-xs font-medium text-[var(--university-muted)]">
-                  {selectedProgramId
-                    ? "These are the subjects available under the selected program."
+                  {isStudent
+                    ? "These subjects are fetched from the student assigned program, including current and past semesters."
+                    : selectedProgramId
+                      ? "These are the subjects available under the selected program."
                     : `Showing Semester ${activeSemester} subjects across all programs.`}
                 </p>
               </div>
@@ -335,12 +358,18 @@ const Subjects = () => {
             <p className="mt-1 text-2xl font-black text-[var(--university-ink)]">{subjects.length}</p>
           </div>
           <div className="rounded-xl border border-[var(--border-light)] bg-white p-4 shadow-sm">
-            <p className="text-xs font-bold text-[var(--university-muted)]">Active Subjects</p>
-            <p className="mt-1 text-2xl font-black text-[var(--success)]">{subjects.filter((subject) => subject.status === "active").length}</p>
+            <p className="text-xs font-bold text-[var(--university-muted)]">{isStudent ? "Current Semester" : "Active Subjects"}</p>
+            <p className={`mt-1 ${isStudent ? "text-sm" : "text-2xl"} font-black ${isStudent ? "text-[var(--university-ink)]" : "text-[var(--success)]"}`}>
+              {isStudent ? `Semester ${activeSemester}` : subjects.filter((subject) => subject.status === "active").length}
+            </p>
           </div>
           <div className="rounded-xl border border-[var(--border-light)] bg-white p-4 shadow-sm">
-            <p className="text-xs font-bold text-[var(--university-muted)]">Selected Program</p>
-            <p className="mt-1 truncate text-sm font-black text-[var(--university-ink)]">{selectedProgram?.name || "All Programs"}</p>
+            <p className="text-xs font-bold text-[var(--university-muted)]">
+              {isStudent ? "The Student Assigned Program" : "Selected Program"}
+            </p>
+            <p className="mt-1 truncate text-sm font-black text-[var(--university-ink)]">
+              {isStudent ? assignedProgramName : selectedProgram?.name || "All Programs"}
+            </p>
           </div>
         </div>
       </div>

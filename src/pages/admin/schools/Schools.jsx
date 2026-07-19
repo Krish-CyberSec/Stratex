@@ -15,49 +15,6 @@ import SchoolToolbar from "./components/SchoolToolbar";
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.message || fallback;
 
-const sampleSchools = [
-  {
-    _id: "sample-computer-science",
-    name: "School of Computer Science",
-    slug: "school-of-computer-science",
-    description: "Focuses on computing, software engineering, algorithms and modern technologies.",
-    status: "active",
-    programCount: 12,
-    facultyCount: 45,
-    isSample: true,
-  },
-  {
-    _id: "sample-ai",
-    name: "School of Artificial Intelligence",
-    slug: "school-of-artificial-intelligence",
-    description: "Dedicated to AI, ML, data science, neural networks and intelligent systems.",
-    status: "active",
-    programCount: 8,
-    facultyCount: 32,
-    isSample: true,
-  },
-  {
-    _id: "sample-cyber-security",
-    name: "School of Cyber Security",
-    slug: "school-of-cyber-security",
-    description: "Building experts in cyber security, ethical hacking and digital forensics.",
-    status: "active",
-    programCount: 6,
-    facultyCount: 25,
-    isSample: true,
-  },
-  {
-    _id: "sample-applied-sciences",
-    name: "School of Applied Sciences",
-    slug: "school-of-applied-sciences",
-    description: "Mathematics, physics, chemistry and interdisciplinary applied learning.",
-    status: "inactive",
-    programCount: 5,
-    facultyCount: 18,
-    isSample: true,
-  },
-];
-
 const initialFilters = {
   search: "",
   status: "",
@@ -166,12 +123,7 @@ const Schools = () => {
     navigate(location.pathname, { replace: true });
   }, [location.pathname, location.state, navigate]);
 
-  const visibleSchools = useMemo(
-    () => (!loading && !error && schools.length === 0 ? sampleSchools : schools),
-    [error, loading, schools],
-  );
-
-  const showingSamples = !loading && !error && schools.length === 0;
+  const visibleSchools = useMemo(() => schools, [schools]);
 
   const updateFilter = (key, value) => {
     setFilters((current) => {
@@ -248,12 +200,6 @@ const Schools = () => {
           onViewModeChange={setViewMode}
         />
 
-        {showingSamples ? (
-          <div className="rounded-2xl border border-[color-mix(in_srgb,var(--info)_20%,white)] bg-[color-mix(in_srgb,var(--info)_7%,white)] px-4 py-3 text-sm font-semibold text-[var(--university-blue-dark)]">
-            No backend schools found yet. Showing sample cards so you can preview the layout.
-          </div>
-        ) : null}
-
         {error ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-[var(--error)]">
             {error}
@@ -287,7 +233,7 @@ const Schools = () => {
                 <SchoolCard
                   key={getId(school)}
                   school={school}
-                  onView={(item) => !item.isSample && navigate(`/dashboard/schools/${getId(item)}`)}
+                  onView={(item) => navigate(`/dashboard/schools/${getId(item)}`)}
                 />
               ) : (
                 <article
@@ -315,7 +261,7 @@ const Schools = () => {
                     <button
                       type="button"
                       onClick={() =>
-                        !school.isSample && navigate(`/dashboard/schools/${getId(school)}`)
+                        navigate(`/dashboard/schools/${getId(school)}`)
                       }
                       className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--stratex-blue)] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--stratex-blue-dark)]"
                     >
@@ -338,7 +284,7 @@ const Schools = () => {
           </div>
         )}
 
-        {!showingSamples && !loading && !error ? (
+        {!loading && !error ? (
           <SchoolPagination
             pagination={pagination}
             pageSize={filters.limit}

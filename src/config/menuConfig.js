@@ -142,6 +142,11 @@ export const menuConfig = {
       path: "/dashboard/notifications",
     },
     {
+      name: "Subjects",
+      icon: BookmarkFillIcon,
+      path: "/dashboard/subjects",
+    },
+    {
       name: "Notices",
       icon: NoteIcon,
       path: "/dashboard/notices",

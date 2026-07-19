@@ -7,20 +7,6 @@ import NoticeContentCard from "./components/detail/NoticeContentCard";
 import NoticeDetailHeader from "./components/detail/NoticeDetailHeader";
 import NoticeDetailSidebar from "./components/detail/NoticeDetailSidebar";
 
-const sampleNotice = {
-  _id: "sample-notice",
-  title: "End Term Examination Schedule - Semester 3",
-  content:
-    "This is to inform all students that the end term examinations for Semester 3 will commence from 15th May 2024.\n\nPlease check the detailed schedule and guidelines below:\n\n- Examinations will be conducted in offline mode.\n- Carry your valid ID card to the examination hall.\n- Use of any unfair means will lead to strict disciplinary action.\n- Students must report 30 minutes before the exam time.\n\nAll the best for your examinations!\n\n- Examination Cell",
-  audience: ["student"],
-  status: "published",
-  publishedAt: "2024-05-16T10:30:00.000Z",
-  createdAt: "2024-05-16T10:30:00.000Z",
-  updatedAt: "2024-05-16T10:30:00.000Z",
-  createdBy: { firstName: "Dr.", lastName: "Neha Sharma" },
-  attachment: null,
-};
-
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.response?.data?.errors?.[0] || error?.message || fallback;
 
@@ -62,7 +48,7 @@ const NoticeView = () => {
     loadNotice();
   }, [loadNotice]);
 
-  const displayNotice = notice || (!loading && error ? sampleNotice : null);
+  const displayNotice = notice;
 
   if (loading) {
     return (
@@ -100,12 +86,6 @@ const NoticeView = () => {
           onBack={() => navigate("/dashboard/notices")}
           onEdit={() => navigate(`/dashboard/notices/${displayNotice._id || id}/edit`)}
         />
-
-        {error && !notice ? (
-          <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-semibold text-[var(--stratex-blue)]">
-            Showing sample notice detail because the selected notice could not be loaded.
-          </div>
-        ) : null}
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
           <main className="min-w-0 space-y-4">

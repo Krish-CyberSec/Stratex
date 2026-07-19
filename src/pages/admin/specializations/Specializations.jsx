@@ -31,61 +31,6 @@ const getErrorMessage = (error, fallback) =>
 const getId = (value) => (typeof value === "object" ? value?._id || value?.id || "" : value || "");
 const getProgramName = (specialization) => specialization?.programId?.name || "--";
 
-const sampleSpecializations = [
-  {
-    _id: "sample-ai",
-    name: "Artificial Intelligence & Machine Learning",
-    description: "Focuses on AI, ML algorithms, neural networks, and intelligent systems.",
-    status: "active",
-    createdAt: "2024-05-16T10:30:00.000Z",
-    programId: { _id: "sample-cse", name: "B.Tech - Computer Science Engineering" },
-    isSample: true,
-  },
-  {
-    _id: "sample-cyber",
-    name: "Cyber Security",
-    description: "Study of securing systems, networks, and digital infrastructure.",
-    status: "active",
-    createdAt: "2024-05-14T16:15:00.000Z",
-    programId: { _id: "sample-cse", name: "B.Tech - Computer Science Engineering" },
-    isSample: true,
-  },
-  {
-    _id: "sample-data",
-    name: "Data Science",
-    description: "Involves data analysis, visualization, statistics, and predictive modeling.",
-    status: "active",
-    createdAt: "2024-05-12T09:20:00.000Z",
-    programId: { _id: "sample-ds", name: "B.Sc - Data Science" },
-    isSample: true,
-  },
-  {
-    _id: "sample-cloud",
-    name: "Cloud Computing",
-    description: "Covers cloud platforms, virtualization, and distributed systems.",
-    status: "inactive",
-    createdAt: "2024-05-10T14:45:00.000Z",
-    programId: { _id: "sample-it", name: "B.Tech - Information Technology" },
-    isSample: true,
-  },
-  {
-    _id: "sample-iot",
-    name: "Internet of Things (IoT)",
-    description: "Focuses on IoT devices, connectivity, and embedded systems.",
-    status: "active",
-    createdAt: "2024-05-08T11:10:00.000Z",
-    programId: { _id: "sample-ece", name: "B.Tech - Electronics & Communication" },
-    isSample: true,
-  },
-];
-
-const samplePrograms = [
-  { _id: "sample-cse", name: "B.Tech - Computer Science Engineering", isSample: true },
-  { _id: "sample-ds", name: "B.Sc - Data Science", isSample: true },
-  { _id: "sample-it", name: "B.Tech - Information Technology", isSample: true },
-  { _id: "sample-ece", name: "B.Tech - Electronics & Communication", isSample: true },
-];
-
 const formatDate = (date) => {
   if (!date) return "--";
   const parsed = new Date(date);
@@ -649,21 +594,15 @@ const Specializations = () => {
     return () => clearTimeout(timeout);
   }, [loadSpecializations]);
 
-  const displayPrograms = programs.length ? programs : samplePrograms;
-  const displaySpecializations = specializations.length || loading || error ? specializations : sampleSpecializations;
-  const displaySummary = summary.total ? summary : {
-    total: sampleSpecializations.length,
-    active: sampleSpecializations.filter((item) => item.status === "active").length,
-    inactive: sampleSpecializations.filter((item) => item.status === "inactive").length,
-    programCount: new Set(sampleSpecializations.map((item) => getId(item.programId))).size,
-  };
+  const displayPrograms = programs;
+  const displaySpecializations = specializations;
+  const displaySummary = summary;
 
   const openCreate = () => {
     navigate("/dashboard/specializations/create");
   };
 
   const openEdit = (specialization) => {
-    if (specialization.isSample) return;
     navigate(`/dashboard/specializations/${specialization._id}/edit`);
   };
 
@@ -809,7 +748,7 @@ const Specializations = () => {
             if (!modalLoading) setFormOpen(false);
           }}
           onSave={handleSave}
-          programs={displayPrograms.filter((program) => !program.isSample)}
+          programs={displayPrograms}
           specialization={editingSpecialization}
         />
       ) : null}

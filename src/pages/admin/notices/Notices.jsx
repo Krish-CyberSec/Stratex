@@ -9,36 +9,6 @@ import NoticeList from "./components/NoticeList";
 import NoticeSidebar from "./components/NoticeSidebar";
 import NoticeToolbar from "./components/NoticeToolbar";
 
-const sampleNotices = [
-  {
-    _id: "sample-1",
-    title: "End Term Examination Schedule - Semester 3",
-    content: "The end term examinations for Semester 3 will commence from 15th May 2024. Please check the detailed schedule and guidelines.",
-    audience: ["student"],
-    status: "published",
-    publishedAt: "2024-05-10T10:30:00.000Z",
-    isSample: true,
-  },
-  {
-    _id: "sample-2",
-    title: "Workshop on Data Structures using Python",
-    content: "Department of Computer Science is organizing a hands-on workshop on Data Structures using Python.",
-    audience: ["student", "faculty"],
-    status: "published",
-    publishedAt: "2024-05-08T15:45:00.000Z",
-    isSample: true,
-  },
-  {
-    _id: "sample-3",
-    title: "Internship Registration 2025",
-    content: "Internship registration for Summer 2025 batch has been temporarily disabled. Further updates will be notified soon.",
-    audience: ["student"],
-    status: "inactive",
-    publishedAt: "2024-04-20T17:10:00.000Z",
-    isSample: true,
-  },
-];
-
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.response?.data?.errors?.[0] || error?.message || fallback;
 
@@ -137,13 +107,12 @@ const Notices = () => {
     return () => clearTimeout(timeout);
   }, [loadNotices]);
 
-  const displayNotices = notices.length || loading || error ? notices : sampleNotices;
+  const displayNotices = notices;
   const totalPages = pagination.totalPages || 1;
   const total = pagination.total ?? displayNotices.length;
 
   const statusCounts = useMemo(() => {
-    const source = notices.length ? notices : sampleNotices;
-    return source.reduce((acc, notice) => {
+    return notices.reduce((acc, notice) => {
       const key = notice.category || "general";
       acc[key] = (acc[key] || 0) + 1;
       return acc;
@@ -167,7 +136,7 @@ const Notices = () => {
   };
 
   const handleClear = async (notice) => {
-    if (!notice?._id || notice.isSample) return;
+    if (!notice?._id) return;
 
     setError("");
 
@@ -271,7 +240,7 @@ const Notices = () => {
             examinations: statusCounts.examinations || 0,
             events: statusCounts.events || 0,
             general: statusCounts.general || 0,
-            holidays: notices.length || sampleNotices.length,
+            holidays: statusCounts.holidays || 0,
           }} />
         </div>
       </div>

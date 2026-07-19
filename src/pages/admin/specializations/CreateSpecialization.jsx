@@ -33,11 +33,6 @@ export const initialForm = {
   allowSubjectReference: true,
 };
 
-export const samplePrograms = [
-  { _id: "sample-cse", name: "B.Tech - Computer Science Engineering", isSample: true },
-  { _id: "sample-mba", name: "MBA - Business Administration", isSample: true },
-];
-
 export const StatusBadge = ({ status }) => (
   <span className={`inline-flex rounded-md px-2.5 py-1 text-[11px] font-black capitalize ${
     status === "active" ? "bg-green-50 text-[var(--success)]" : "bg-orange-50 text-orange-700"
@@ -367,7 +362,7 @@ const CreateSpecialization = () => {
     loadPrograms();
   }, [loadPrograms]);
 
-  const displayPrograms = programs.length ? programs : samplePrograms;
+  const displayPrograms = programs;
   const selectedProgram = programs.find((program) => getId(program) === form.programId);
   const hasRealProgram = Boolean(selectedProgram && !selectedProgram.isSample);
 

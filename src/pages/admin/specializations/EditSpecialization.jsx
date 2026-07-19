@@ -18,7 +18,6 @@ import {
   Navigation,
   ProgressCard,
   ReviewStep,
-  samplePrograms,
   SettingsStep,
   Stepper,
 } from "./CreateSpecialization";
@@ -78,7 +77,7 @@ const EditSpecialization = () => {
     loadPage();
   }, [loadPage]);
 
-  const displayPrograms = programs.length ? programs : samplePrograms;
+  const displayPrograms = programs;
   const selectedProgram = programs.find((program) => getId(program) === form.programId);
   const hasRealProgram = Boolean(selectedProgram && !selectedProgram.isSample);
 

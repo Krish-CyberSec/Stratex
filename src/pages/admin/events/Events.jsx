@@ -25,75 +25,6 @@ const getUserRoles = (user = {}) => [
   ...new Set([...(Array.isArray(user.roles) ? user.roles : []), user.primaryRole, user.role].filter(Boolean)),
 ];
 
-const sampleEvents = [
-  {
-    _id: "sample-south-france",
-    title: "South Of France: Nice",
-    description: "Break-taking sea-side beaches in the later hours of the afternoon. Explore the ancient town, stone pathways, and quiet plazas.",
-    location: "Nice, France",
-    startDate: "2026-08-22T09:30:00.000Z",
-    endDate: "2026-08-22T16:30:00.000Z",
-    status: "scheduled",
-    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80",
-    isSample: true,
-  },
-  {
-    _id: "sample-scotland",
-    title: "Hiking In Scotland",
-    description: "Mountain trails and quiet lakes create the perfect weekend field activity for students and faculty.",
-    location: "Scotland",
-    startDate: "2026-09-12T07:00:00.000Z",
-    endDate: "2026-09-12T18:00:00.000Z",
-    status: "postponed",
-    image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
-    isSample: true,
-  },
-  {
-    _id: "sample-memphis",
-    title: "Walking In Memphis",
-    description: "A cultural walk through city stories, street music, and public spaces for the university travel group.",
-    location: "Memphis, USA",
-    startDate: "2026-09-27T10:00:00.000Z",
-    endDate: "2026-09-27T15:00:00.000Z",
-    status: "live",
-    image: "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=900&q=80",
-    isSample: true,
-  },
-  {
-    _id: "sample-nyc",
-    title: "NYC: Greatest Place",
-    description: "A campus travel showcase featuring architecture, public transit, and urban management planning.",
-    location: "New York, USA",
-    startDate: "2026-10-23T11:00:00.000Z",
-    endDate: "2026-10-23T17:00:00.000Z",
-    status: "live",
-    image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80",
-    isSample: true,
-  },
-  {
-    _id: "sample-snow",
-    title: "First Snow Storm",
-    description: "Nature photography, weather systems, and outdoor preparedness workshop for student clubs.",
-    location: "Switzerland",
-    startDate: "2026-11-21T08:30:00.000Z",
-    endDate: "2026-11-21T14:00:00.000Z",
-    status: "scheduled",
-    image: "https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&w=900&q=80",
-    isSample: true,
-  },
-  {
-    _id: "sample-berlin",
-    title: "Breathing Berlin",
-    description: "A seminar about sustainable cities, transport, culture, and public design in Berlin.",
-    location: "Berlin, Germany",
-    startDate: "2026-12-11T12:00:00.000Z",
-    endDate: "2026-12-11T16:00:00.000Z",
-    status: "scheduled",
-    image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=900&q=80",
-    isSample: true,
-  },
-];
-
 const statusOptions = [
   { label: "All", value: "" },
   { label: "Scheduled", value: "scheduled" },
@@ -131,8 +62,108 @@ const formatDate = (value) => {
   });
 };
 
-const getEventImage = (event, index = 0) =>
-  event.banner || event.poster || event.image || sampleEvents[index % sampleEvents.length]?.image || sampleEvents[0].image;
+const getEventImage = (event) => event.banner || event.poster || event.image || "";
+
+const EventFormModal = ({ error, event, loading, onClose, onSave }) => {
+  const [form, setForm] = useState(getInitialForm(event));
+
+  useEffect(() => {
+    setForm(getInitialForm(event));
+  }, [event]);
+
+  const updateField = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const canSubmit = form.title.trim().length >= 2 && getNoticeText(form.description).trim().length >= 2 && form.startDate && !loading;
+
+  const handleSubmit = (submitEvent) => {
+    submitEvent.preventDefault();
+    if (!canSubmit) return;
+
+    onSave({
+      title: form.title.trim(),
+      description: form.description.trim(),
+      location: form.location.trim(),
+      startDate: new Date(form.startDate).toISOString(),
+      endDate: form.endDate ? new Date(form.endDate).toISOString() : undefined,
+      status: form.status,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-3 sm:p-4">
+      <div className="max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-xl border border-[var(--border-light)] bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-4">
+          <div>
+            <h2 className="text-lg font-black text-[var(--university-ink)]">{event ? "Edit Event" : "Create Event"}</h2>
+            <p className="mt-1 text-xs font-semibold text-[var(--university-muted)]">Manage event title, schedule, location, and status.</p>
+          </div>
+          <button type="button" onClick={onClose} disabled={loading} className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-light)] text-[var(--university-muted)]">
+            <X size={16} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="max-h-[calc(92vh-74px)] space-y-4 overflow-y-auto p-5">
+          {error ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-[var(--error)]">{error}</div>
+          ) : null}
+
+          <label className="block">
+            <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">Title</span>
+            <input value={form.title} onChange={(e) => updateField("title", e.target.value)} className="h-11 w-full rounded-lg border border-[var(--border)] px-3 text-sm font-semibold outline-none focus:border-[var(--stratex-blue)]" />
+          </label>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="block">
+              <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">Start Date</span>
+              <input type="datetime-local" value={form.startDate} onChange={(e) => updateField("startDate", e.target.value)} className="h-11 w-full rounded-lg border border-[var(--border)] px-3 text-sm font-semibold outline-none focus:border-[var(--stratex-blue)]" />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">End Date</span>
+              <input type="datetime-local" value={form.endDate} onChange={(e) => updateField("endDate", e.target.value)} className="h-11 w-full rounded-lg border border-[var(--border)] px-3 text-sm font-semibold outline-none focus:border-[var(--stratex-blue)]" />
+            </label>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="block">
+              <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">Location</span>
+              <input value={form.location} onChange={(e) => updateField("location", e.target.value)} className="h-11 w-full rounded-lg border border-[var(--border)] px-3 text-sm font-semibold outline-none focus:border-[var(--stratex-blue)]" />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">Status</span>
+              <select value={form.status} onChange={(e) => updateField("status", e.target.value)} className="h-11 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-semibold outline-none focus:border-[var(--stratex-blue)]">
+                <option value="scheduled">Scheduled</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </label>
+          </div>
+
+          <div>
+            <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">Description</span>
+            <NoticeRichTextEditor
+              ariaLabel="Event description"
+              maxLength={1000}
+              onChange={(value) => updateField("description", value)}
+              placeholder="Write event description..."
+              resetKey={event?._id || "new-event"}
+              value={form.description}
+            />
+          </div>
+
+          <div className="flex flex-col-reverse gap-3 border-t border-[var(--border-light)] pt-4 sm:flex-row sm:justify-end">
+            <button type="button" onClick={onClose} disabled={loading} className="h-10 rounded-lg border border-[var(--border-light)] bg-white px-4 text-sm font-bold text-[var(--university-ink)]">Cancel</button>
+            <button type="submit" disabled={!canSubmit} className="h-10 rounded-lg bg-[var(--stratex-blue)] px-4 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-60">
+              {loading ? "Saving..." : "Save Event"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 const EventToolbar = ({
   date,
@@ -201,16 +232,23 @@ const EventToolbar = ({
 
 const EventCard = ({ canManage, event, index, onDelete, onEdit, onView }) => {
   const realStatus = event.status || "scheduled";
-  const displayStatus = event.isSample ? realStatus : realStatus;
+  const displayStatus = realStatus;
+  const eventImage = getEventImage(event);
 
   return (
     <article className="group overflow-hidden rounded-lg border border-[var(--border-light)] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="relative h-40 overflow-hidden bg-slate-100">
-        <img
-          src={getEventImage(event, index)}
-          alt=""
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-        />
+        {eventImage ? (
+          <img
+            src={eventImage}
+            alt=""
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-[var(--surface-soft)] text-[var(--university-muted)]">
+            <CalendarDays size={30} />
+          </div>
+        )}
         <span className={`absolute left-3 top-3 rounded px-2 py-1 text-[10px] font-black uppercase tracking-wide ${statusClasses[displayStatus] || statusClasses.scheduled}`}>
           {statusLabel(displayStatus)}
         </span>
@@ -248,7 +286,7 @@ const EventCard = ({ canManage, event, index, onDelete, onEdit, onView }) => {
             <ArrowRight size={13} />
           </button>
           <div className="flex items-center gap-2">
-            {!event.isSample && canManage ? (
+            {canManage ? (
               <>
                 <button
                   type="button"
@@ -331,12 +369,32 @@ const Events = () => {
   };
 
   const openEdit = (event) => {
-    if (event.isSample) return;
-    navigate(`/dashboard/events/${event._id}`, { state: { edit: true } });
+    setModalError("");
+    setEditingEvent(event);
+    setFormOpen(true);
+  };
+
+  const handleSave = async (payload) => {
+    setModalLoading(true);
+    setModalError("");
+
+    try {
+      if (editingEvent) {
+        await updateEvent(editingEvent._id, payload);
+      } else {
+        await createEvent(payload);
+      }
+      setFormOpen(false);
+      setEditingEvent(null);
+      await loadEvents();
+    } catch (err) {
+      setModalError(getErrorMessage(err, "Unable to save event"));
+    } finally {
+      setModalLoading(false);
+    }
   };
 
   const handleDelete = async (event) => {
-    if (event.isSample) return;
     if (!window.confirm(`Delete ${event.title}?`)) return;
     setError("");
 
@@ -348,7 +406,7 @@ const Events = () => {
     }
   };
 
-  const displayEvents = events.length || loading || error ? events : sampleEvents;
+  const displayEvents = events;
   const total = pagination.total || displayEvents.length;
 
   const clearFilters = () => {

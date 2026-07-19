@@ -28,25 +28,6 @@ const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.response?.data?.errors?.[0] || error?.message || fallback;
 const getId = (value) => (typeof value === "object" ? value?._id || value?.id || "" : value || "");
 
-const sampleSpecialization = {
-  _id: "sample-specialization",
-  name: "Artificial Intelligence & Machine Learning",
-  description:
-    "The Artificial Intelligence & Machine Learning specialization provides students with a strong foundation in AI concepts, machine learning algorithms, neural networks, deep learning, natural language processing, computer vision, and intelligent systems. It prepares students to build smart applications and solve complex real-world problems using data-driven approaches.",
-  status: "active",
-  createdAt: "2024-05-16T10:30:00.000Z",
-  updatedAt: "2024-05-16T10:30:00.000Z",
-  createdBy: { firstName: "Dr. Neha", lastName: "Sharma" },
-  updatedBy: { firstName: "Dr. Neha", lastName: "Sharma" },
-  programId: {
-    _id: "sample-program",
-    name: "B.Tech - Computer Science Engineering",
-    code: "CSE",
-    schoolId: { name: "School of Engineering & Technology" },
-  },
-  isSample: true,
-};
-
 const formatDate = (date) => {
   if (!date) return "--";
   const parsed = new Date(date);
@@ -108,7 +89,7 @@ const SpecializationView = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const displaySpecialization = specialization || (!loading && error ? sampleSpecialization : null);
+  const displaySpecialization = specialization;
   const programId = getId(displaySpecialization?.programId);
 
   const specializationCode = useMemo(() => {
@@ -133,7 +114,7 @@ const SpecializationView = () => {
         notifications: 0,
       });
     } catch {
-      setCounts({ subjects: 12, students: 184, faculty: 6, notifications: 0 });
+      setCounts({ subjects: 0, students: 0, faculty: 0, notifications: 0 });
     }
   }, []);
 
@@ -160,8 +141,8 @@ const SpecializationView = () => {
     } catch (err) {
       setError(getErrorMessage(err, "Unable to load specialization details"));
       setSpecialization(null);
-      setProgramDetails(sampleSpecialization.programId);
-      setCounts({ subjects: 12, students: 184, faculty: 6, notifications: 8 });
+      setProgramDetails(null);
+      setCounts({ subjects: 0, students: 0, faculty: 0, notifications: 0 });
     } finally {
       setLoading(false);
     }
@@ -172,7 +153,7 @@ const SpecializationView = () => {
   }, [loadSpecialization]);
 
   const changeStatus = async () => {
-    if (!displaySpecialization || displaySpecialization.isSample) return;
+    if (!displaySpecialization) return;
     const nextStatus = displaySpecialization.status === "active" ? "inactive" : "active";
     setSaving(true);
     setError("");
@@ -191,7 +172,7 @@ const SpecializationView = () => {
   };
 
   const remove = async () => {
-    if (!displaySpecialization || displaySpecialization.isSample) return;
+    if (!displaySpecialization) return;
     if (!window.confirm(`Delete ${displaySpecialization.name}? Backend rules may block deletion if it is linked to subjects, users, or notifications.`)) return;
 
     setSaving(true);
@@ -268,12 +249,10 @@ const SpecializationView = () => {
               <Download size={16} />
               Download
             </button>
-            {!displaySpecialization.isSample ? (
-              <button type="button" onClick={() => navigate(`/dashboard/specializations/${displaySpecialization._id}/edit`)} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--stratex-blue)] px-4 text-sm font-black text-white shadow-sm">
-                <Edit3 size={16} />
-                Edit Specialization
-              </button>
-            ) : null}
+            <button type="button" onClick={() => navigate(`/dashboard/specializations/${displaySpecialization._id}/edit`)} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--stratex-blue)] px-4 text-sm font-black text-white shadow-sm">
+              <Edit3 size={16} />
+              Edit Specialization
+            </button>
           </div>
         </header>
 
@@ -359,25 +338,23 @@ const SpecializationView = () => {
               <RelatedRow label="Notifications" value={counts.notifications} />
             </section>
 
-            {!displaySpecialization.isSample ? (
-              <section className="rounded-xl border border-[var(--border-light)] bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center gap-2 text-[var(--stratex-blue)]">
-                  <Edit3 size={17} />
-                  <h2 className="text-sm font-black text-[var(--university-ink)]">Actions</h2>
-                </div>
-                <div className="space-y-2">
-                  <button type="button" onClick={() => navigate(`/dashboard/specializations/${displaySpecialization._id}/edit`)} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm font-bold text-[var(--university-ink)] hover:bg-[var(--surface-soft)]">
-                    <Edit3 size={16} /> Edit Specialization
-                  </button>
-                  <button type="button" disabled={saving} onClick={changeStatus} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm font-bold text-[var(--university-ink)] hover:bg-[var(--surface-soft)]">
-                    <RefreshCw size={16} /> Change Status
-                  </button>
-                  <button type="button" disabled={saving} onClick={remove} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm font-bold text-[var(--error)] hover:bg-red-50">
-                    <Trash2 size={16} /> Delete Specialization
-                  </button>
-                </div>
-              </section>
-            ) : null}
+            <section className="rounded-xl border border-[var(--border-light)] bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center gap-2 text-[var(--stratex-blue)]">
+                <Edit3 size={17} />
+                <h2 className="text-sm font-black text-[var(--university-ink)]">Actions</h2>
+              </div>
+              <div className="space-y-2">
+                <button type="button" onClick={() => navigate(`/dashboard/specializations/${displaySpecialization._id}/edit`)} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm font-bold text-[var(--university-ink)] hover:bg-[var(--surface-soft)]">
+                  <Edit3 size={16} /> Edit Specialization
+                </button>
+                <button type="button" disabled={saving} onClick={changeStatus} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm font-bold text-[var(--university-ink)] hover:bg-[var(--surface-soft)]">
+                  <RefreshCw size={16} /> Change Status
+                </button>
+                <button type="button" disabled={saving} onClick={remove} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm font-bold text-[var(--error)] hover:bg-red-50">
+                  <Trash2 size={16} /> Delete Specialization
+                </button>
+              </div>
+            </section>
           </aside>
         </div>
       </div>

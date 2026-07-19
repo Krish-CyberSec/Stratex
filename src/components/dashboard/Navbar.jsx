@@ -153,7 +153,7 @@ const Navbar = () => {
     const notificationId = getNotificationId(item);
 
     try {
-      if (!String(notificationId).startsWith("demo-")) {
+      if (notificationId) {
         await markNotificationRead(notificationId);
       }
     } catch {
