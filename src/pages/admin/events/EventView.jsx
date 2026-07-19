@@ -5,17 +5,22 @@ import {
   ChevronRight,
   Clock,
   Download,
+  Edit3,
   FileText,
+  Image as ImageIcon,
   Info,
   MapPin,
   RefreshCw,
+  Save,
   Tag,
-  UserRound,
   UsersRound,
+  X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { getEventById } from "../../../services/eventService";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
+import { getEventById, updateEvent } from "../../../services/eventService";
+import NoticeRichTextEditor from "../notices/components/create/NoticeRichTextEditor";
 import { getNoticeText, hasNoticeHtml, sanitizeNoticeHtml } from "../notices/noticeContentUtils";
 
 const defaultBanner =
@@ -129,6 +134,45 @@ const getPayload = (response) => response?.data?.data || response?.data?.event |
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.response?.data?.errors?.[0] || error?.message || fallback;
 
+const getId = (value) => (typeof value === "object" ? value?._id || value?.id || "" : value || "");
+const getUserRoles = (user = {}) => [
+  ...new Set([...(Array.isArray(user.roles) ? user.roles : []), user.primaryRole, user.role].filter(Boolean)),
+];
+
+const toDateInput = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 10);
+};
+
+const toTimeInput = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(11, 16);
+};
+
+const buildIso = (date, time) => {
+  if (!date || !time) return "";
+  return new Date(`${date}T${time}`).toISOString();
+};
+
+const getEditForm = (event = {}) => ({
+  title: event.title || "",
+  description: event.description || "",
+  location: event.location || "",
+  startDate: toDateInput(event.startDate),
+  startTime: toTimeInput(event.startDate),
+  endDate: toDateInput(event.endDate),
+  endTime: toTimeInput(event.endDate),
+  status: event.status || "scheduled",
+  bannerFile: null,
+  posterFile: null,
+});
+
 const formatDateTime = (date) => {
   if (!date) return "--";
   const parsed = new Date(date);
@@ -180,6 +224,65 @@ const statusClasses = {
 const DetailCard = ({ children, className = "" }) => (
   <section className={`rounded-xl border border-[var(--border-light)] bg-white shadow-sm ${className}`}>{children}</section>
 );
+
+const useObjectUrl = (file) => {
+  const [url, setUrl] = useState("");
+
+  useEffect(() => {
+    if (!file) {
+      setUrl("");
+      return undefined;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
+
+  return url;
+};
+
+const FormField = ({ children, label, required }) => (
+  <label className="block">
+    <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">
+      {label} {required ? <span className="text-[var(--error)]">*</span> : null}
+    </span>
+    {children}
+  </label>
+);
+
+const MediaUpload = ({ currentUrl, file, helper, label, onChange }) => {
+  const objectUrl = useObjectUrl(file);
+  const preview = objectUrl || currentUrl || "";
+
+  return (
+    <div>
+      <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">{label}</span>
+      <label className="group block cursor-pointer overflow-hidden rounded-xl border border-dashed border-[var(--border)] bg-white transition hover:border-[var(--stratex-blue)] hover:bg-blue-50/50">
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="hidden"
+          onChange={(event) => onChange(event.target.files?.[0] || null)}
+        />
+        <div className="relative h-40 bg-slate-100">
+          {preview ? (
+            <img src={preview} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center gap-2 text-[var(--university-muted)]">
+              <ImageIcon size={28} />
+              <span className="text-xs font-black">Upload image</span>
+            </div>
+          )}
+          <div className="absolute inset-0 hidden items-center justify-center bg-slate-950/45 text-xs font-black text-white group-hover:flex">
+            {file ? file.name : "Choose new image"}
+          </div>
+        </div>
+      </label>
+      <p className="mt-2 text-xs font-semibold leading-5 text-[var(--university-muted)]">{helper}</p>
+    </div>
+  );
+};
 
 const MetaTile = ({ icon: Icon, primary, secondary }) => (
   <div className="flex min-w-0 items-center gap-3 rounded-lg border border-[var(--border-light)] bg-white px-4 py-3">
@@ -410,12 +513,202 @@ const EventSidebar = ({ event }) => (
   </aside>
 );
 
+const EventEditPanel = ({ error, event, form, onCancel, onChange, onSave, saving }) => {
+  const previewBanner = useObjectUrl(form.bannerFile);
+  const canSave =
+    form.title.trim().length >= 2 &&
+    getNoticeText(form.description).trim().length >= 2 &&
+    form.location.trim().length >= 2 &&
+    form.startDate &&
+    form.startTime &&
+    !saving;
+
+  return (
+    <form onSubmit={(submitEvent) => {
+      submitEvent.preventDefault();
+      if (canSave) onSave();
+    }}>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_430px]">
+        <main className="min-w-0 rounded-xl border border-[var(--border-light)] bg-white shadow-sm">
+          <div className="space-y-7 p-5 sm:p-6">
+            {error ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-[var(--error)]">{error}</div>
+            ) : null}
+
+            <section>
+              <h2 className="text-sm font-black text-[var(--stratex-blue)]">1. Event Information</h2>
+              <div className="mt-5 space-y-5">
+                <FormField label="Title" required>
+                  <input
+                    value={form.title}
+                    onChange={(event) => onChange("title", event.target.value)}
+                    placeholder="Enter event title"
+                    className="h-12 w-full rounded-lg border border-[var(--border)] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--stratex-blue)]"
+                  />
+                </FormField>
+
+                <div>
+                  <span className="mb-2 block text-xs font-black text-[var(--university-ink)]">
+                    Description <span className="text-[var(--error)]">*</span>
+                  </span>
+                  <NoticeRichTextEditor
+                    ariaLabel="Event description"
+                    maxLength={1000}
+                    onChange={(value) => onChange("description", value)}
+                    placeholder="Write event description..."
+                    resetKey={event?._id || "event-edit"}
+                    value={form.description}
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="border-t border-[var(--border-light)] pt-6">
+              <h2 className="text-sm font-black text-[var(--stratex-blue)]">2. Date, Time & Location</h2>
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <FormField label="Start Date" required>
+                  <input
+                    type="date"
+                    value={form.startDate}
+                    onChange={(event) => onChange("startDate", event.target.value)}
+                    className="h-12 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-semibold outline-none transition focus:border-[var(--stratex-blue)]"
+                  />
+                </FormField>
+                <FormField label="Start Time" required>
+                  <input
+                    type="time"
+                    value={form.startTime}
+                    onChange={(event) => onChange("startTime", event.target.value)}
+                    className="h-12 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-semibold outline-none transition focus:border-[var(--stratex-blue)]"
+                  />
+                </FormField>
+                <FormField label="End Date">
+                  <input
+                    type="date"
+                    value={form.endDate}
+                    onChange={(event) => onChange("endDate", event.target.value)}
+                    className="h-12 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-semibold outline-none transition focus:border-[var(--stratex-blue)]"
+                  />
+                </FormField>
+                <FormField label="End Time">
+                  <input
+                    type="time"
+                    value={form.endTime}
+                    onChange={(event) => onChange("endTime", event.target.value)}
+                    className="h-12 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-semibold outline-none transition focus:border-[var(--stratex-blue)]"
+                  />
+                </FormField>
+              </div>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <FormField label="Location" required>
+                  <input
+                    value={form.location}
+                    onChange={(event) => onChange("location", event.target.value)}
+                    placeholder="Enter event location"
+                    className="h-12 w-full rounded-lg border border-[var(--border)] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--stratex-blue)]"
+                  />
+                </FormField>
+                <FormField label="Status" required>
+                  <select
+                    value={form.status}
+                    onChange={(event) => onChange("status", event.target.value)}
+                    className="h-12 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-semibold outline-none transition focus:border-[var(--stratex-blue)]"
+                  >
+                    <option value="scheduled">Scheduled</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </FormField>
+              </div>
+            </section>
+
+            <section className="border-t border-[var(--border-light)] pt-6">
+              <h2 className="text-sm font-black text-[var(--stratex-blue)]">3. Event Media</h2>
+              <div className="mt-5 grid gap-5 lg:grid-cols-2">
+                <MediaUpload
+                  currentUrl={event.banner || event.image}
+                  file={form.bannerFile}
+                  helper="JPG, PNG or WEBP. Upload a new banner to replace the current one."
+                  label="Banner"
+                  onChange={(file) => onChange("bannerFile", file)}
+                />
+                <MediaUpload
+                  currentUrl={event.poster}
+                  file={form.posterFile}
+                  helper="JPG, PNG or WEBP. Upload a new poster to replace the current one."
+                  label="Poster"
+                  onChange={(file) => onChange("posterFile", file)}
+                />
+              </div>
+            </section>
+          </div>
+
+          <div className="flex flex-col-reverse gap-3 border-t border-[var(--border-light)] px-5 py-4 sm:flex-row sm:justify-between sm:px-6">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={saving}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[var(--border-light)] bg-white px-5 text-sm font-bold text-[var(--university-ink)]"
+            >
+              <X size={16} />
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!canSave}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--stratex-blue)] px-5 text-sm font-black text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Save size={16} />
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </main>
+
+        <aside className="space-y-5 xl:sticky xl:top-5 xl:self-start">
+          <DetailCard className="overflow-hidden">
+            <div className="h-40 bg-slate-100">
+              <img
+                src={previewBanner || event.banner || event.image || defaultBanner}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="p-5">
+              <span className={`inline-flex rounded px-2.5 py-1 text-[10px] font-black uppercase ${statusClasses[form.status] || statusClasses.scheduled}`}>
+                {form.status}
+              </span>
+              <h2 className="mt-3 text-lg font-black text-[var(--university-ink)]">{form.title || "Event Title"}</h2>
+              <p className="mt-2 line-clamp-3 text-sm font-semibold leading-6 text-[var(--university-muted)]">
+                {getNoticeText(form.description) || "Event description preview will appear here."}
+              </p>
+            </div>
+          </DetailCard>
+          <DetailCard className="p-5">
+            <h2 className="text-sm font-black text-[var(--university-ink)]">Edit Notes</h2>
+            <p className="mt-2 text-xs font-semibold leading-5 text-[var(--university-muted)]">
+              Changes are saved directly to the event record. Uploading a new banner or poster replaces the current media.
+            </p>
+          </DetailCard>
+        </aside>
+      </div>
+    </form>
+  );
+};
+
 const EventView = () => {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState(getEditForm());
+  const [editError, setEditError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const loadEvent = useCallback(async () => {
     setLoading(true);
@@ -443,6 +736,71 @@ const EventView = () => {
   }, [loadEvent]);
 
   const pageTitle = useMemo(() => event?.title || "Event Details", [event?.title]);
+  const roles = getUserRoles(user);
+  const canManage =
+    Boolean(event?.canManage) ||
+    roles.includes("superAdmin") ||
+    getId(event?.createdBy) === getId(user);
+
+  const beginEdit = () => {
+    if (!event || event.isSample || !canManage) return;
+    setEditForm(getEditForm(event));
+    setEditError("");
+    setEditMode(true);
+  };
+
+  const cancelEdit = () => {
+    setEditForm(getEditForm(event));
+    setEditError("");
+    setEditMode(false);
+  };
+
+  const updateEditField = (field, value) => {
+    setEditForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const saveEvent = async () => {
+    if (!event || event.isSample) return;
+
+    setSaving(true);
+    setEditError("");
+
+    try {
+      const payload = new FormData();
+      payload.append("title", editForm.title.trim());
+      payload.append("description", editForm.description.trim());
+      payload.append("location", editForm.location.trim());
+      payload.append("startDate", buildIso(editForm.startDate, editForm.startTime));
+      payload.append("status", editForm.status);
+
+      if (editForm.endDate && editForm.endTime) {
+        payload.append("endDate", buildIso(editForm.endDate, editForm.endTime));
+      }
+
+      if (editForm.bannerFile) payload.append("banner", editForm.bannerFile);
+      if (editForm.posterFile) payload.append("poster", editForm.posterFile);
+
+      const response = await updateEvent(event._id, payload);
+      const updatedEvent = getPayload(response);
+      setEvent(updatedEvent);
+      setEditForm(getEditForm(updatedEvent));
+      setEditMode(false);
+    } catch (err) {
+      setEditError(getErrorMessage(err, "Unable to update event"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!event || event.isSample) return;
+    if (location.state?.edit && canManage) {
+      setEditForm(getEditForm(event));
+      setEditError("");
+      setEditMode(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [canManage, event, location.pathname, location.state, navigate]);
 
   if (loading) {
     return (
@@ -500,20 +858,42 @@ const EventView = () => {
               <UsersRound size={15} />
               Share Event
             </button>
+            {!editMode && canManage && !event.isSample ? (
+              <button
+                type="button"
+                onClick={beginEdit}
+                className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-lg bg-[var(--stratex-blue)] px-4 text-xs font-black text-white shadow-sm transition hover:bg-[var(--stratex-blue-dark)]"
+              >
+                <Edit3 size={15} />
+                Edit Event
+              </button>
+            ) : null}
           </div>
         </header>
 
-        <main className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="min-w-0 space-y-5">
-            <EventHero event={event} />
-            <EventMainContent event={event} />
-            <div className="flex gap-2 rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-xs font-semibold text-[var(--stratex-blue)]">
-              <Info size={15} className="mt-0.5 shrink-0" />
-              <span>Please arrive 15 minutes before the event starts. Carry your university ID card for verification.</span>
+        {editMode ? (
+          <EventEditPanel
+            error={editError}
+            event={event}
+            form={editForm}
+            onCancel={cancelEdit}
+            onChange={updateEditField}
+            onSave={saveEvent}
+            saving={saving}
+          />
+        ) : (
+          <main className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="min-w-0 space-y-5">
+              <EventHero event={event} />
+              <EventMainContent event={event} />
+              <div className="flex gap-2 rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-xs font-semibold text-[var(--stratex-blue)]">
+                <Info size={15} className="mt-0.5 shrink-0" />
+                <span>Please arrive 15 minutes before the event starts. Carry your university ID card for verification.</span>
+              </div>
             </div>
-          </div>
-          <EventSidebar event={event} />
-        </main>
+            <EventSidebar event={event} />
+          </main>
+        )}
       </div>
     </div>
   );

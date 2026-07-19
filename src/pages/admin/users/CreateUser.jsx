@@ -153,11 +153,56 @@ const isAllowedRoleForCurrentUser = (role, canCreatePrivilegedUsers) => {
   if (canCreatePrivilegedUsers) return true;
   return ["student", "faculty", "coordinator"].includes(role);
 };
+
+const isFacultyCoordinatorRoleSet = (roles = []) =>
+  roles.length === 2 &&
+  roles.includes("faculty") &&
+  roles.includes("coordinator");
+
+const normalizeRoleSet = (roles = []) => {
+  const uniqueRoles = [...new Set(roles.filter(Boolean))];
+
+  if (uniqueRoles.includes("coordinator")) {
+    return ["faculty", "coordinator"];
+  }
+
+  if (uniqueRoles.includes("student")) return ["student"];
+  if (uniqueRoles.includes("schoolAdmin")) return ["schoolAdmin"];
+  if (uniqueRoles.includes("examCell")) return ["examCell"];
+  if (uniqueRoles.includes("superAdmin")) return ["superAdmin"];
+  if (uniqueRoles.includes("faculty")) return ["faculty"];
+
+  return [];
+};
+
+const normalizeRoleSelection = (currentRoles = [], selectedRole) => {
+  const roles = normalizeRoleSet(currentRoles);
+  const isSelected = roles.includes(selectedRole);
+
+  if (isSelected) {
+    if (selectedRole === "faculty" && roles.includes("coordinator")) {
+      return [];
+    }
+
+    return roles.filter((role) => role !== selectedRole);
+  }
+
+  if (selectedRole === "coordinator") {
+    return ["faculty", "coordinator"];
+  }
+
+  if (selectedRole === "faculty") {
+    return ["faculty"];
+  }
+
+  return [selectedRole];
+};
+
 const validateFormData = (formData = {}, options = {}) => {
   const { canCreatePrivilegedUsers = false } = options;
   const data = formData || {};
 
-  const roles = Array.isArray(data.roles) ? data.roles : [];
+  const roles = normalizeRoleSet(Array.isArray(data.roles) ? data.roles : []);
   const academicAssignments = Array.isArray(data.academicAssignments)
     ? data.academicAssignments
     : [];
@@ -214,6 +259,9 @@ const validateFormData = (formData = {}, options = {}) => {
     return "Personal email confirmation must match a valid personal email.";
   }
   if (!roles.length) return "Select at least one role.";
+  if (roles.length > 1 && !isFacultyCoordinatorRoleSet(roles)) {
+    return "Only Faculty can be combined with Coordinator. Student, School Admin, Exam Cell, and Super Admin must be single-role accounts.";
+  }
   if (roles.includes("superAdmin") && roles.length > 1) {
     return "Super Admin cannot be combined with other roles.";
   }
@@ -236,10 +284,6 @@ const validateFormData = (formData = {}, options = {}) => {
   ) {
     return "Personal and university email must be different.";
   }
-  if (selectedRoleNeedsAssignment && !data.addAssignment) {
-    return "Academic assignment is required for the selected role.";
-  }
-
   if (selectedRoleNeedsAssignment && !data.addAssignment) {
     return "Academic assignment is required for the selected role.";
   }
@@ -302,7 +346,7 @@ const readDraftFromStorage = (canCreatePrivilegedUsers = false) => {
     const normalizedDraft = {
       ...createDefaultFormData(),
       ...parsed,
-      roles: Array.isArray(parsed.roles) ? parsed.roles : [],
+      roles: normalizeRoleSet(Array.isArray(parsed.roles) ? parsed.roles : []),
       academicAssignments:
         Array.isArray(parsed.academicAssignments) &&
         parsed.academicAssignments.length
@@ -467,7 +511,7 @@ const CreateUser = () => {
       done: formData.roles.length > 0,
     },
     {
-      label: "Mail verification ready",
+      label: "Setup email ready",
       done: formData.roles.length > 0 && canSendSetupEmail,
     },
     {
@@ -761,23 +805,7 @@ const CreateUser = () => {
 
   const toggleRole = (role) => {
     setFormData((prev) => {
-      let roles = prev.roles.includes(role)
-        ? prev.roles.filter((item) => item !== role)
-        : [...prev.roles, role];
-
-      if (role === "superAdmin" && !prev.roles.includes(role)) {
-        roles = ["superAdmin"];
-      } else {
-        roles = roles.filter((item) => item !== "superAdmin");
-      }
-
-      if (role === "coordinator" && !prev.roles.includes(role)) {
-        roles = [...new Set([...roles, "faculty"])];
-      }
-
-      if (role === "faculty" && prev.roles.includes("coordinator")) {
-        roles = roles.filter((item) => item !== "coordinator");
-      }
+      const roles = normalizeRoleSelection(prev.roles, role);
 
       const needsAssignment = roles.some((item) =>
         rolesThatNeedAssignments.includes(item),
@@ -830,9 +858,7 @@ const CreateUser = () => {
     validateFormData(formData, { canCreatePrivilegedUsers });
 
   const buildPayload = () => {
-    const roles = formData.roles.includes("coordinator")
-      ? [...new Set([...formData.roles, "faculty"])]
-      : formData.roles;
+    const roles = normalizeRoleSet(formData.roles);
 
     const hasAssignmentRequiringRole = roles.some((role) =>
       rolesThatNeedAssignments.includes(role),
@@ -893,7 +919,7 @@ const CreateUser = () => {
     try {
       const response = await createUser(buildPayload());
       const message =
-        response.data?.message || "User created and verification email sent.";
+        response.data?.message || "User created and setup email sent.";
 
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(DRAFT_KEY);
@@ -1065,7 +1091,7 @@ const CreateUser = () => {
                         ? isValidEmail(formData.personalEmail)
                           ? "Valid email format"
                           : "Enter a complete email address"
-                        : "Setup verification mail is sent here"
+                        : "Password setup mail is sent here"
                     }
                   />
                   <TextField
@@ -1090,7 +1116,7 @@ const CreateUser = () => {
                     hint={
                       formData.confirmPersonalEmail
                         ? personalEmailVerified
-                          ? "Email verified for setup mail"
+                          ? "Email confirmed for setup mail"
                           : "Must match the personal email exactly"
                         : "Confirms the setup mail destination"
                     }
@@ -1102,6 +1128,60 @@ const CreateUser = () => {
             <section className={`${cardClass} p-4 sm:p-6`}>
               <SectionTitle
                 number="2"
+                icon={Shield}
+                title="Roles"
+                description="Choose the user's access level before assigning account details."
+              />
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+                {allowedRoleCards.map((role) => {
+                  const Icon = role.icon;
+                  const selected = formData.roles.includes(role.value);
+
+                  return (
+                    <button
+                      type="button"
+                      key={role.value}
+                      onClick={() => toggleRole(role.value)}
+                      className={`relative min-h-[132px] rounded-lg border p-4 text-center transition ${
+                        selected
+                          ? "border-blue-500 bg-blue-50 shadow-[0_0_0_3px_rgba(37,99,235,0.12)]"
+                          : "border-[#d8e2f0] bg-white hover:border-blue-300"
+                      }`}
+                    >
+                      <span
+                        className={`absolute right-3 top-3 h-4 w-4 rounded border ${
+                          selected
+                            ? "border-blue-600 bg-blue-600"
+                            : "border-[#b8c9df] bg-white"
+                        }`}
+                      />
+                      <span
+                        className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${role.tone}`}
+                      >
+                        <Icon size={22} />
+                      </span>
+                      <span className="mt-3 block text-sm font-extrabold text-[#14264a]">
+                        {role.label}
+                      </span>
+                      <span className="mt-2 block text-xs font-semibold leading-5 text-[#53657f]">
+                        {role.description}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-xs font-bold leading-5 text-blue-700">
+                <Info size={16} className="mt-0.5 shrink-0" />
+                Student, School Admin, Exam Cell, and Super Admin are single-role
+                accounts. Only Faculty can be combined with Coordinator.
+              </div>
+            </section>
+
+            <section className={`${cardClass} p-4 sm:p-6`}>
+              <SectionTitle
+                number="3"
                 icon={Building2}
                 title="University Account"
                 description="University login information for the user."
@@ -1178,60 +1258,6 @@ const CreateUser = () => {
                   ]}
                   hint="User account status"
                 />
-              </div>
-            </section>
-
-            <section className={`${cardClass} p-4 sm:p-6`}>
-              <SectionTitle
-                number="3"
-                icon={Shield}
-                title="Roles"
-                description="Select one or more roles for the user."
-              />
-
-              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
-                {allowedRoleCards.map((role) => {
-                  const Icon = role.icon;
-                  const selected = formData.roles.includes(role.value);
-
-                  return (
-                    <button
-                      type="button"
-                      key={role.value}
-                      onClick={() => toggleRole(role.value)}
-                      className={`relative min-h-[132px] rounded-lg border p-4 text-center transition ${
-                        selected
-                          ? "border-blue-500 bg-blue-50 shadow-[0_0_0_3px_rgba(37,99,235,0.12)]"
-                          : "border-[#d8e2f0] bg-white hover:border-blue-300"
-                      }`}
-                    >
-                      <span
-                        className={`absolute right-3 top-3 h-4 w-4 rounded border ${
-                          selected
-                            ? "border-blue-600 bg-blue-600"
-                            : "border-[#b8c9df] bg-white"
-                        }`}
-                      />
-                      <span
-                        className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${role.tone}`}
-                      >
-                        <Icon size={22} />
-                      </span>
-                      <span className="mt-3 block text-sm font-extrabold text-[#14264a]">
-                        {role.label}
-                      </span>
-                      <span className="mt-2 block text-xs font-semibold leading-5 text-[#53657f]">
-                        {role.description}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="mt-4 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-xs font-bold text-blue-700">
-                <Info size={16} className="mt-0.5 shrink-0" />
-                Select at least one role. Coordinator automatically includes
-                Faculty access. A verification email is sent after creation.
               </div>
             </section>
 
@@ -1652,7 +1678,7 @@ const CreateUser = () => {
                 </li>
                 <li>Super Admin does not require any academic assignment.</li>
                 <li>
-                  Setup mail is sent to verify the account and create a
+                  Setup mail is sent so the user can create a
                   password.
                 </li>
                 <li>Personal and university emails must be unique.</li>
