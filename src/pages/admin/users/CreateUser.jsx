@@ -60,6 +60,8 @@ const createAssignmentRow = () => ({
   programId: "",
   specializationId: "",
   semesterId: "",
+  academicYearId: "",
+  sectionId: "",
   assignedSubjects: [],
   isCoordinator: false,
   isPrimary: false,
@@ -308,6 +310,9 @@ const validateFormData = (formData = {}, options = {}) => {
       if (selectedFacultyLikeRole && row.assignedSubjects.length === 0) {
         return `Faculty and coordinator users must be assigned to at least one subject${rowLabel}.`;
       }
+      if (row.sectionId && !row.academicYearId) {
+        return `Academic year is required when section is selected${rowLabel}.`;
+      }
     }
 
     if (rows.filter((row) => row.isPrimary).length !== 1) {
@@ -315,13 +320,19 @@ const validateFormData = (formData = {}, options = {}) => {
     }
 
     const duplicateKey = (row) =>
-      [row.programId, row.specializationId || "", row.semesterId].join("|");
+      [
+        row.programId,
+        row.specializationId || "",
+        row.semesterId,
+        row.academicYearId || "",
+        row.sectionId || "",
+      ].join("|");
     const seenKeys = new Set();
 
     for (const row of rows) {
       const key = duplicateKey(row);
       if (seenKeys.has(key)) {
-        return "Duplicate academic assignments are not allowed (same program, specialization and semester).";
+        return "Duplicate academic assignments are not allowed.";
       }
       seenKeys.add(key);
     }
@@ -386,6 +397,8 @@ const CreateUser = () => {
   const [loadingOptions, setLoadingOptions] = useState(false);
   const [schools, setSchools] = useState([]);
   const [programs, setPrograms] = useState([]);
+  const [academicYears, setAcademicYears] = useState([]);
+  const [sectionsByScope, setSectionsByScope] = useState({});
   const [assignmentOptionsByProgram, setAssignmentOptionsByProgram] = useState(
     {},
   );
@@ -475,6 +488,22 @@ const CreateUser = () => {
 
       return matchesSemester && matchesSpecialization;
     });
+  };
+
+  const getSectionScopeKey = (row) =>
+    row.academicYearId && row.programId && row.semesterId
+      ? [row.academicYearId, row.programId, row.semesterId].join("|")
+      : "";
+
+  const getSectionOptionsForRow = (row) => {
+    const sections = sectionsByScope[getSectionScopeKey(row)] || [];
+    const specializationId = row.specializationId || "";
+
+    return sections.filter(
+      (section) =>
+        (section.specializationId?._id || section.specializationId || "") ===
+        specializationId,
+    );
   };
 
   const fullName =
@@ -591,21 +620,35 @@ const CreateUser = () => {
     const loadPrograms = async () => {
       if (!formData.schoolId) {
         setPrograms([]);
+        setAcademicYears([]);
         return;
       }
 
       try {
-        const response = await getPrograms({
-          page: 1,
-          limit: 100,
-          schoolId: formData.schoolId,
-          status: "active",
-          sortBy: "name",
-          order: "asc",
-        });
+        const [programsResponse, academicYearsResponse] = await Promise.all([
+          getPrograms({
+            page: 1,
+            limit: 100,
+            schoolId: formData.schoolId,
+            status: "active",
+            sortBy: "name",
+            order: "asc",
+          }),
+          axiosInstance.get("/academic-years", {
+            params: {
+              page: 1,
+              limit: 100,
+              schoolId: formData.schoolId,
+              status: "active",
+              sortBy: "startDate",
+              order: "desc",
+            },
+          }),
+        ]);
 
         if (isMounted) {
-          setPrograms(unwrapList(response));
+          setPrograms(unwrapList(programsResponse));
+          setAcademicYears(unwrapList(academicYearsResponse));
         }
       } catch (err) {
         if (isMounted) {
@@ -620,6 +663,65 @@ const CreateUser = () => {
       isMounted = false;
     };
   }, [formData.schoolId]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const rowsNeedingSections = formData.academicAssignments.filter((row) => {
+      const key = getSectionScopeKey(row);
+      return key && !sectionsByScope[key];
+    });
+    const scopeRows = [
+      ...new Map(
+        rowsNeedingSections.map((row) => [getSectionScopeKey(row), row]),
+      ).values(),
+    ];
+
+    if (!scopeRows.length) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    const loadSections = async () => {
+      try {
+        const entries = await Promise.all(
+          scopeRows.map(async (row) => {
+            const response = await axiosInstance.get("/sections", {
+              params: {
+                page: 1,
+                limit: 100,
+                academicYearId: row.academicYearId,
+                programId: row.programId,
+                semesterId: row.semesterId,
+                status: "active",
+                sortBy: "name",
+                order: "asc",
+              },
+            });
+
+            return [getSectionScopeKey(row), unwrapList(response)];
+          }),
+        );
+
+        if (isMounted) {
+          setSectionsByScope((prev) => ({
+            ...prev,
+            ...Object.fromEntries(entries),
+          }));
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(getErrorMessage(err, "Unable to load sections"));
+        }
+      }
+    };
+
+    loadSections();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [formData.academicAssignments, sectionsByScope]);
 
   useEffect(() => {
     let isMounted = true;
@@ -723,6 +825,8 @@ const CreateUser = () => {
         programId: "",
         specializationId: "",
         semesterId: "",
+        academicYearId: "",
+        sectionId: "",
         assignedSubjects: [],
       })),
     }));
@@ -742,6 +846,7 @@ const CreateUser = () => {
       programId: value,
       specializationId: "",
       semesterId: "",
+      sectionId: "",
       assignedSubjects: [],
     });
   };
@@ -749,7 +854,7 @@ const CreateUser = () => {
   const handleRowSpecializationChange = (localId, value) => {
     updateAssignmentRow(localId, {
       specializationId: value,
-      semesterId: "",
+      sectionId: "",
       assignedSubjects: [],
     });
   };
@@ -757,7 +862,15 @@ const CreateUser = () => {
   const handleRowSemesterChange = (localId, value) => {
     updateAssignmentRow(localId, {
       semesterId: value,
+      sectionId: "",
       assignedSubjects: [],
+    });
+  };
+
+  const handleRowAcademicYearChange = (localId, value) => {
+    updateAssignmentRow(localId, {
+      academicYearId: value,
+      sectionId: "",
     });
   };
 
@@ -892,6 +1005,8 @@ const CreateUser = () => {
         programId: row.programId,
         specializationId: row.specializationId || null,
         semesterId: row.semesterId,
+        academicYearId: row.academicYearId || null,
+        sectionId: row.sectionId || null,
         assignedSubjects: roles.includes("student") ? [] : row.assignedSubjects,
         isCoordinator: Boolean(row.isCoordinator),
         isPrimary: row.isPrimary,
@@ -1313,6 +1428,7 @@ const CreateUser = () => {
                   const rowSpecializations = getRowOptions(
                     row.programId,
                   ).specializations;
+                  const rowSections = getSectionOptionsForRow(row);
 
                   return (
                     <div
@@ -1387,6 +1503,45 @@ const CreateUser = () => {
                             label: `Semester ${semester.semesterNumber}`,
                           }))}
                           placeholder="Select semester"
+                        />
+                        <SelectField
+                          id={`academicYearId-${row.localId}`}
+                          label="Academic Year (Optional)"
+                          value={row.academicYearId}
+                          onChange={(value) =>
+                            handleRowAcademicYearChange(row.localId, value)
+                          }
+                          disabled={!formData.addAssignment || !formData.schoolId}
+                          options={academicYears.map((academicYear) => ({
+                            value: academicYear._id,
+                            label: academicYear.isCurrent
+                              ? `${academicYear.name} (Current)`
+                              : academicYear.name,
+                          }))}
+                          placeholder="Select academic year"
+                        />
+                        <SelectField
+                          id={`sectionId-${row.localId}`}
+                          label="Section (Optional)"
+                          value={row.sectionId}
+                          onChange={(value) =>
+                            updateAssignmentRow(row.localId, {
+                              sectionId: value,
+                            })
+                          }
+                          disabled={
+                            !formData.addAssignment ||
+                            !row.academicYearId ||
+                            !row.programId ||
+                            !row.semesterId
+                          }
+                          options={rowSections.map((section) => ({
+                            value: section._id,
+                            label: section.capacity
+                              ? `${section.name} (${section.capacity})`
+                              : section.name,
+                          }))}
+                          placeholder="Select section"
                         />
 
                         <div className="sm:col-span-2">
@@ -1608,6 +1763,13 @@ const CreateUser = () => {
                       const rowSemester = getSemesterOptionsForRow(
                         row.programId,
                       ).find((semester) => semester._id === row.semesterId);
+                      const rowAcademicYear = academicYears.find(
+                        (academicYear) =>
+                          academicYear._id === row.academicYearId,
+                      );
+                      const rowSection = getSectionOptionsForRow(row).find(
+                        (section) => section._id === row.sectionId,
+                      );
 
                       return (
                         <div
@@ -1631,6 +1793,10 @@ const CreateUser = () => {
                               ? `Semester ${rowSemester.semesterNumber}`
                               : "Semester not selected"}
                           </p>
+                          <p>
+                            {rowAcademicYear?.name || "Academic year not selected"}
+                          </p>
+                          <p>{rowSection?.name || "Section not selected"}</p>
                           <p>
                             {row.assignedSubjects.length} subject(s) selected
                           </p>

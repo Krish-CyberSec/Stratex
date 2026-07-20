@@ -204,6 +204,8 @@ const createAssignmentRow = () => ({
   programId: "",
   specializationId: "",
   semesterId: "",
+  academicYearId: "",
+  sectionId: "",
   assignedSubjects: [],
   isCoordinator: false,
   isPrimary: false,
@@ -221,6 +223,8 @@ const buildAssignmentRow = (assignment = {}) => ({
     assignment.specializationId ?? assignment.specialization,
   ),
   semesterId: getId(assignment.semesterId ?? assignment.semester),
+  academicYearId: getId(assignment.academicYearId ?? assignment.academicYear),
+  sectionId: getId(assignment.sectionId ?? assignment.section),
   assignedSubjects: Array.isArray(assignment.assignedSubjects)
     ? assignment.assignedSubjects.map(getId).filter(Boolean)
     : [],
@@ -373,6 +377,10 @@ const UserDetails = ({
   const [isSavingAssignments, setIsSavingAssignments] = useState(false);
   const [assignmentsError, setAssignmentsError] = useState("");
   const [assignmentPrograms, setAssignmentPrograms] = useState([]);
+  const [assignmentAcademicYears, setAssignmentAcademicYears] = useState([]);
+  const [assignmentSectionsByScope, setAssignmentSectionsByScope] = useState(
+    {},
+  );
   const [assignmentAdmins, setAssignmentAdmins] = useState([]);
   const [assignmentOptionsLoading, setAssignmentOptionsLoading] =
     useState(false);
@@ -516,7 +524,8 @@ const UserDetails = ({
       setAssignmentOptionsLoading(true);
 
       try {
-        const [programsResponse, adminsResponse] = await Promise.all([
+        const [programsResponse, academicYearsResponse, adminsResponse] =
+          await Promise.all([
           getPrograms({
             page: 1,
             limit: 100,
@@ -524,6 +533,16 @@ const UserDetails = ({
             status: "active",
             sortBy: "name",
             order: "asc",
+          }),
+          axiosInstance.get("/academic-years", {
+            params: {
+              page: 1,
+              limit: 100,
+              schoolId: userSchoolId,
+              status: "active",
+              sortBy: "startDate",
+              order: "desc",
+            },
           }),
           getUsers({
             page: 1,
@@ -535,6 +554,7 @@ const UserDetails = ({
 
         if (isMounted) {
           setAssignmentPrograms(unwrapList(programsResponse));
+          setAssignmentAcademicYears(unwrapList(academicYearsResponse));
           setAssignmentAdmins(unwrapList(adminsResponse));
         }
       } catch (err) {
@@ -642,6 +662,75 @@ const UserDetails = ({
     userSchoolId,
   ]);
 
+  const getSectionScopeKey = (row) =>
+    row.academicYearId && row.programId && row.semesterId
+      ? [row.academicYearId, row.programId, row.semesterId].join("|")
+      : "";
+
+  useEffect(() => {
+    if (!isEditingAssignments) return undefined;
+    let isMounted = true;
+    const rowsNeedingSections = assignmentsDraft.filter((row) => {
+      const key = getSectionScopeKey(row);
+      return key && !assignmentSectionsByScope[key];
+    });
+    const scopeRows = [
+      ...new Map(
+        rowsNeedingSections.map((row) => [getSectionScopeKey(row), row]),
+      ).values(),
+    ];
+
+    if (!scopeRows.length) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    const loadSections = async () => {
+      try {
+        const entries = await Promise.all(
+          scopeRows.map(async (row) => {
+            const response = await axiosInstance.get("/sections", {
+              params: {
+                page: 1,
+                limit: 100,
+                academicYearId: row.academicYearId,
+                programId: row.programId,
+                semesterId: row.semesterId,
+                status: "active",
+                sortBy: "name",
+                order: "asc",
+              },
+            });
+
+            return [getSectionScopeKey(row), unwrapList(response)];
+          }),
+        );
+
+        if (isMounted) {
+          setAssignmentSectionsByScope((prev) => ({
+            ...prev,
+            ...Object.fromEntries(entries),
+          }));
+        }
+      } catch (err) {
+        if (isMounted) {
+          setAssignmentsError(
+            err?.response?.data?.message ||
+              err?.message ||
+              "Unable to load sections.",
+          );
+        }
+      }
+    };
+
+    loadSections();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isEditingAssignments, assignmentsDraft, assignmentSectionsByScope]);
+
   const getRowOptions = (programId) =>
     assignmentOptionsByProgram[programId] || {
       specializations: [],
@@ -679,6 +768,17 @@ const UserDetails = ({
     });
   };
 
+  const getSectionOptionsForRow = (row) => {
+    const sections = assignmentSectionsByScope[getSectionScopeKey(row)] || [];
+    const specializationId = row.specializationId || "";
+
+    return sections.filter(
+      (section) =>
+        (section.specializationId?._id || section.specializationId || "") ===
+        specializationId,
+    );
+  };
+
   const handleStartEditAssignments = () => {
     const rows = academicAssignments.length
       ? academicAssignments.map(buildAssignmentRow)
@@ -708,6 +808,7 @@ const UserDetails = ({
       programId: value,
       specializationId: "",
       semesterId: "",
+      sectionId: "",
       assignedSubjects: [],
     });
   };
@@ -715,13 +816,24 @@ const UserDetails = ({
   const handleRowSpecializationChange = (localId, value) => {
     updateAssignmentRow(localId, {
       specializationId: value,
-      semesterId: "",
+      sectionId: "",
       assignedSubjects: [],
     });
   };
 
   const handleRowSemesterChange = (localId, value) => {
-    updateAssignmentRow(localId, { semesterId: value, assignedSubjects: [] });
+    updateAssignmentRow(localId, {
+      semesterId: value,
+      sectionId: "",
+      assignedSubjects: [],
+    });
+  };
+
+  const handleRowAcademicYearChange = (localId, value) => {
+    updateAssignmentRow(localId, {
+      academicYearId: value,
+      sectionId: "",
+    });
   };
 
   const toggleAssignmentSubject = (localId, subjectId) => {
@@ -780,6 +892,9 @@ const UserDetails = ({
       if (isFacultyLikeUser && row.assignedSubjects.length === 0) {
         return `Faculty and coordinator users must be assigned to at least one subject${rowLabel}.`;
       }
+      if (row.sectionId && !row.academicYearId) {
+        return `Academic year is required when section is selected${rowLabel}.`;
+      }
     }
 
     if (
@@ -795,9 +910,11 @@ const UserDetails = ({
         row.programId,
         row.specializationId || "",
         row.semesterId,
+        row.academicYearId || "",
+        row.sectionId || "",
       ].join("|");
       if (seenKeys.has(key)) {
-        return "Duplicate academic assignments are not allowed (same program, specialization and semester).";
+        return "Duplicate academic assignments are not allowed.";
       }
       seenKeys.add(key);
     }
@@ -822,6 +939,8 @@ const UserDetails = ({
         programId: row.programId,
         specializationId: row.specializationId || null,
         semesterId: row.semesterId,
+        academicYearId: row.academicYearId || null,
+        sectionId: row.sectionId || null,
         assignedSubjects: currentUserRoles.includes("student")
           ? []
           : row.assignedSubjects,
@@ -963,6 +1082,14 @@ const UserDetails = ({
       "No specialization",
     ),
     semester: formatSemester(assignment?.semester || assignment?.semesterId),
+    academicYear: formatDisplayValue(
+      assignment?.academicYear || assignment?.academicYearId,
+      "Not assigned",
+    ),
+    section: formatDisplayValue(
+      assignment?.section || assignment?.sectionId,
+      "Not assigned",
+    ),
     role: formatRole(
       assignment?.role ||
         (assignment?.isCoordinator
@@ -979,7 +1106,7 @@ const UserDetails = ({
   const renderAssignmentsTable = () => (
     <>
       <div className="mt-4 hidden overflow-x-auto sm:block">
-        <table className="w-full min-w-[720px] border-separate border-spacing-0 text-left text-sm">
+        <table className="w-full min-w-[900px] border-separate border-spacing-0 text-left text-sm">
           <thead>
             <tr className="text-xs font-bold uppercase tracking-wide text-[#7b8aa5]">
               <th className="border-b border-[#e5edf7] px-3 py-2.5">Program</th>
@@ -988,6 +1115,12 @@ const UserDetails = ({
               </th>
               <th className="border-b border-[#e5edf7] px-3 py-2.5">
                 Semester
+              </th>
+              <th className="border-b border-[#e5edf7] px-3 py-2.5">
+                Academic Year
+              </th>
+              <th className="border-b border-[#e5edf7] px-3 py-2.5">
+                Section
               </th>
               <th className="border-b border-[#e5edf7] px-3 py-2.5">Role</th>
               <th className="border-b border-[#e5edf7] px-3 py-2.5">
@@ -1008,6 +1141,12 @@ const UserDetails = ({
                 </td>
                 <td className="border-b border-[#eef2f9] px-3 py-3 font-semibold text-[#53657f]">
                   {row.semester}
+                </td>
+                <td className="border-b border-[#eef2f9] px-3 py-3 font-semibold text-[#53657f]">
+                  {row.academicYear}
+                </td>
+                <td className="border-b border-[#eef2f9] px-3 py-3 font-semibold text-[#53657f]">
+                  {row.section}
                 </td>
                 <td className="border-b border-[#eef2f9] px-3 py-3">
                   <Pill tone="text-blue-600 bg-blue-50 border-blue-100">
@@ -1064,6 +1203,8 @@ const UserDetails = ({
             <div className="mt-1 space-y-0.5 text-xs font-semibold text-[#53657f]">
               <p>Specialization: {row.specialization}</p>
               <p>Semester: {row.semester}</p>
+              <p>Academic Year: {row.academicYear}</p>
+              <p>Section: {row.section}</p>
               <p>Assigned Subjects: {row.subjects}</p>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -1684,6 +1825,7 @@ const UserDetails = ({
                     const rowSpecializations = getRowOptions(
                       row.programId,
                     ).specializations;
+                    const rowSections = getSectionOptionsForRow(row);
 
                     return (
                       <div
@@ -1777,6 +1919,60 @@ const UserDetails = ({
                               {rowSemesterOptions.map((semester) => (
                                 <option key={semester._id} value={semester._id}>
                                   Semester {semester.semesterNumber}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <p className={labelClass}>Academic Year</p>
+                            <select
+                              className={`${fieldClass} appearance-none`}
+                              value={row.academicYearId}
+                              disabled={!userSchoolId}
+                              onChange={(event) =>
+                                handleRowAcademicYearChange(
+                                  row.localId,
+                                  event.target.value,
+                                )
+                              }
+                            >
+                              <option value="">Select academic year</option>
+                              {assignmentAcademicYears.map((academicYear) => (
+                                <option
+                                  key={academicYear._id}
+                                  value={academicYear._id}
+                                >
+                                  {academicYear.isCurrent
+                                    ? `${academicYear.name} (Current)`
+                                    : academicYear.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <p className={labelClass}>Section</p>
+                            <select
+                              className={`${fieldClass} appearance-none`}
+                              value={row.sectionId}
+                              disabled={
+                                !row.academicYearId ||
+                                !row.programId ||
+                                !row.semesterId
+                              }
+                              onChange={(event) =>
+                                updateAssignmentRow(row.localId, {
+                                  sectionId: event.target.value,
+                                })
+                              }
+                            >
+                              <option value="">Select section</option>
+                              {rowSections.map((section) => (
+                                <option key={section._id} value={section._id}>
+                                  {section.capacity
+                                    ? `${section.name} (${section.capacity})`
+                                    : section.name}
                                 </option>
                               ))}
                             </select>

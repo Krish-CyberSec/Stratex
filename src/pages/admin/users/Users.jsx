@@ -850,6 +850,10 @@ const Users = () => {
         payload.status = updatedUser.status;
       }
 
+      if (Array.isArray(updatedUser.academicAssignments)) {
+        payload.academicAssignments = updatedUser.academicAssignments;
+      }
+
       await updateUser(updatedUser._id, payload);
       setEditingUser(null);
 
