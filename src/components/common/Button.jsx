@@ -40,3 +40,5 @@ const Button = ({ text, bg, color, font }) => {
 };
 
 export default Button;
+
+
