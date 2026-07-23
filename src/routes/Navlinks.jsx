@@ -41,7 +41,8 @@ import Profile from "../pages/profile/Profile";
 const Navlinks = () => {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      {/* <Route path="/" element={<Home />} /> */}
+      <Route path="/" element={<Error />} />
       <Route path="/support" element={<Support />} />
       <Route
         path="/login"
